@@ -1,7 +1,7 @@
 {
   "webhooks": [
-    "https://hooks.microbadger.com/images/dcmartin/amd64-addon-motion/",
-    "https://hooks.microbadger.com/images/dcmartin/aarch64-addon-motion/",
-    "https://hooks.microbadger.com/images/dcmartin/armv7-addon-motion/"
+    "https://hooks.microbadger.com/images/dcmartin/amd64-addon-motion/0337AkOM5G0s-NksB-w1wjysmZ4=",
+    "https://hooks.microbadger.com/images/dcmartin/aarch64-addon-motion/Hmz9gp_v0FsbztqplmHwSsnMr9I=",
+    "https://hooks.microbadger.com/images/dcmartin/armv7-addon-motion/PBFo0_5twhkZa0Jl0M6jfcarsD4="
   ]
 }
