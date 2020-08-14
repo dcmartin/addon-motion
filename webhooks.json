@@ -1,0 +1,7 @@
+{
+  "webhooks": [
+    "https://hooks.microbadger.com/images/dcmartin/amd64-addon-motion/",
+    "https://hooks.microbadger.com/images/dcmartin/aarch64-addon-motion/",
+    "https://hooks.microbadger.com/images/dcmartin/armv7-addon-motion/"
+  ]
+}

@@ -1,0 +1,180 @@
+{
+  "name": "Motion Server",
+  "version": "0.10.3",
+  "slug": "motion",
+  "description": "Motion server; network cameras only; no device support.",
+  "url": "https://github.com/dcmartin/addon-motion/",
+  "webui": "http://[HOST]:[PORT:7999]/",
+  "startup": "application",
+  "boot": "auto",
+  "arch": [
+    "aarch64",
+    "amd64",
+    "armv7"
+  ],
+  "ingress": true,
+  "ingress_port": 7999,
+  "devices": [],
+  "hassio_api": true,
+  "hassio_role": "default",
+  "host_network": true,
+  "homeassistant_api": true,
+  "privileged": [
+    "SYS_ADMIN"
+  ],
+  "timeout": 90,
+  "tmpfs": "size=256m,uid=0,rw",
+  "map": [
+    "share:rw",
+    "config:rw"
+  ],
+  "panel_icon": "mdi:motion-sensor",
+  "panel_title": "Motion-AI",
+  "panel_admin": true,
+  "ports": {
+    "7999/tcp": 7999,
+    "8080/tcp": 8080,
+    "8090/tcp": 8090
+  },
+  "ports_description": {
+    "7999/tcp": "Web interface",
+    "8080/tcp": "Motion interface",
+    "8090/tcp": "Camera interface"
+  },
+  "options": {
+    "log_level": "info",
+    "log_motion_level": "info",
+    "log_motion_type": "ALL",
+    "default": {
+      "changes": "on",
+      "event_gap": 30,
+      "framerate": 5,
+      "minimum_motion_frames": 25,
+      "post_pictures": "best",
+      "text_scale": 2,
+      "threshold_percent": 2,
+      "username": "!secret motioncam-username",
+      "password": "!secret motioncam-password",
+      "netcam_userpass": "!secret netcam-userpass",
+      "width": 640,
+      "height": 480
+    },
+    "mqtt": {
+      "host": "!secret mqtt-broker",
+      "port": "!secret mqtt-port",
+      "username": "!secret mqtt-username",
+      "password": "!secret mqtt-password"
+    },
+    "group": "motion",
+    "device": "hostname",
+    "client": "hostname",
+    "timezone": "America/Los_Angeles",
+    "cameras": [
+      {
+        "name": "wyzecam",
+        "type": "netcam",
+        "width": 640,
+        "height": 360,
+        "netcam_url": "rtsp://192.168.1.223/live",
+        "netcam_userpass": "!secret motioncam-userpass"
+      }
+    ]
+  },
+  "schema": {
+    "log_level": "str",
+    "log_type": "str?",
+    "log_motion": "int?",
+    "log_motion_level": "list(emergency|alert|critical|error|warn|notice|info|debug|all)?",
+    "log_motion_type": "list(COR|STR|ENC|NET|DBL|EVT|TRK|VID|ALL)?",
+    "log_file": "str?",
+    "group": "str",
+    "device": "str?",
+    "client": "str?",
+    "username": "str?",
+    "password": "str?",
+    "timezone": "str?",
+    "default": {
+      "post_pictures": "list(first|last|best|most|center)",
+      "picture_output": "list(off|on|first|best)?",
+      "brightness": "int?",
+      "changes": "list(on|off)?",
+      "contrast": "int?",
+      "despeckle": "str?",
+      "event_gap": "int?",
+      "fov": "int?",
+      "framerate": "int(2,100)?",
+      "height": "int?",
+      "hue": "int?",
+      "interval": "int(60,86400)?",
+      "lightswitch": "int?",
+      "minimum_motion_frames": "int(1,300)?",
+      "movie_max": "int(1,300)?",
+      "movie_output": "list(off|mp4|3gp|mpeg4|swf|flv|ffv1|mov|mkv|hevc)?",
+      "movie_quality": "int(1,100)?",
+      "netcam_userpass": "str?",
+      "palette": "int?",
+      "password": "str?",
+      "picture_quality": "int?",
+      "post_capture": "int?",
+      "pre_capture": "int?",
+      "saturation": "int?",
+      "stream_quality": "int?",
+      "text_scale": "int(1,10)?",
+      "threshold": "int?",
+      "threshold_percent": "int(0,100)?",
+      "type": "list(netcam|ftpd|mqtt)?",
+      "username": "str?",
+      "width": "int?"
+    },
+    "cameras": [
+      {
+        "name": "str",
+        "type": "list(netcam|ftpd|mqtt)",
+        "brightness": "int?",
+        "changes": "list(on|off)?",
+        "contrast": "int?",
+        "despeckle": "str?",
+        "device": "str?",
+        "event_gap": "int?",
+        "fov": "int?",
+        "framerate": "int(2,100)?",
+        "height": "int?",
+        "hue": "int?",
+        "icon": "str?",
+        "lightswitch": "int?",
+        "mac": "str?",
+        "mjpeg_url": "str?",
+        "movie_max": "int(1,60)?",
+        "movie_output": "list(off|mp4|mpeg4|3gp)?",
+        "movie_quality": "int(1,100)?",
+        "netcam_url": "str?",
+        "netcam_userpass": "str?",
+        "palette": "int?",
+        "password": "str?",
+        "picture_quality": "int?",
+        "port": "port?",
+        "rotate": "int?",
+        "saturation": "int?",
+        "still_image_url": "str?",
+        "stream_quality": "int?",
+        "text_scale": "int(1,10)?",
+        "threshold": "int?",
+        "threshold_percent": "int(0,100)?",
+        "username": "str?",
+        "userpass": "str?",
+        "width": "int?"
+      }
+    ],
+    "mqtt": {
+      "host": "str?",
+      "port": "port?",
+      "username": "str?",
+      "password": "str?"
+    },
+    "reload": "bool?"
+  },
+  "environment": {
+    "LOG_FORMAT": "{LEVEL}: {MESSAGE}"
+  },
+  "image": "dcmartin/{arch}-addon-motion"
+}
