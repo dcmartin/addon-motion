@@ -85,7 +85,7 @@ All topics begin with the `devicedb` specified, which defaults to "motion".
 
 ## Sample output
 
-[![motion sample](samples/motion-sample.png?raw=true "SAMPLE")](samples/motion-sample.png)
+[![motion sample](docs/samples/motion-sample.png?raw=true "SAMPLE")](docs/samples/motion-sample.png)
 
 # Additional information
 The Motion package has extensive [documentation][motiondoc] on available parameters.  Almost all parameters are avsailable.
