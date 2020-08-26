@@ -22,7 +22,6 @@ cp -f ${MOTION_CONF%%.*}.default ${MOTION_CONF}
 if [ -z "${MOTION_CONTROL_PORT:-}" ]; then MOTION_CONTROL_PORT=8080; fi
 if [ -z "${MOTION_STREAM_PORT:-}" ]; then MOTION_STREAM_PORT=8090; fi
 
-
 ## apache
 if [ ! -s "${MOTION_APACHE_CONF}" ]; then
   motion.log.error "Missing Apache configuration"

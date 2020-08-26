@@ -233,17 +233,87 @@ STYLE TOOLTIP
 </style>
 
 <!--
-PROCESS EXCHANGE
+PROCESS CAMERAS
 --!>
 
+<!--
+EXAMPLE JSON:
+
+{
+  "timestamp": "2020-08-26Z16:27:34Z",
+  "cameras": [
+    {
+      "id": "backyardcam",
+      "events": 5
+    },
+    {
+      "id": "dogpond",
+      "events": 0
+    },
+    {
+      "id": "dogshed",
+      "events": 0
+    },
+    {
+      "id": "dogshedfront",
+      "events": 0
+    },
+    {
+      "id": "pondview",
+      "events": 45
+    },
+    {
+      "id": "sheshed",
+      "events": 1200
+    }
+  ]
+}
+--!>
+
+<script>
+var cameras_request = new XMLHttpRequest();
+cameras_request.onreadystatechange = function() {
+  if (this.readyState == 4 && this.status == 200 && this.responseText != null) {
+    var jobj = JSON.parse(this.responseText);
+    if (jobj != null) {
+      var timestamp = jobj["timestamp"];
+      var cameras = jobj["cameras"];
+      var str = '<table border="1">';
+
+      str += '<tr><td align="right">Last Status:</td><td>' + timestamp '</td></tr>';
+      str += '<tr><td align="right">Cameras:</td><td align="left">'
+      cameras.forEach(function(item,index) {
+        str += '<table>';
+        str += '<tr><td align="right"><b>Camera:</b></td><td>' + item.id + '</td></tr>';
+        str += '<tr><td align="right">Events:</td><td>' + item.events + '</td></tr>';
+        str += '</table>';
+      });
+      str += '</td></tr>'
+      str += '</table>';
+      cameras_output.innerHTML = str;
+    }
+  }
+}
+cameras_request.open("GET","/cgi-bin/cameras", true);
+cameras_request.send();
+</script>
+
+<!--
+PROCESS CONFIG
+--!>
+
+<!--
+EXAMPLE JSON:
+
+{
   "config_path": "/data/options.json",
   "ipaddr": "172.30.32.1",
-  "hostname": "local-motion",
+  "hostname": "dad2d8d1-motion",
   "arch": "x86_64",
-  "date": 1597277493,
-  "device": "hostname",
+  "date": 1598369356,
+  "device": "netcams",
   "group": "motion",
-  "client": "hostname",
+  "client": "netcams",
   "timezone": "America/Los_Angeles",
   "unit_system": "imperial",
   "latitude": 0,
@@ -255,6 +325,82 @@ PROCESS EXCHANGE
     "password": "password",
     "port": 1883
   },
+  "watson": null,
+  "digits": null,
+  "share_dir": "/share/motion",
+  "motion": {
+    "log_type": "ALL",
+    "log_level": 7,
+    "log_file": "/tmp/motion.log",
+    "target_dir": "/var/www/localhost/htdocs/cameras",
+    "auto_brightness": "on",
+    "locate_motion_mode": "off",
+    "locate_motion_style": "box",
+    "post_pictures": "best",
+    "picture_output": "best",
+    "movie_output": "on",
+    "movie_output_motion": "on",
+    "picture_type": "jpeg",
+    "netcam_keepalive": "on",
+    "netcam_userpass": "username:password",
+    "pre_capture": 0,
+    "post_capture": 0,
+    "event_gap": 30,
+    "fov": 60,
+    "minimum_motion_frames": 25,
+    "picture_quality": 100,
+    "framerate": 5,
+    "changes": "on",
+    "text_scale": 2,
+    "despeckle_filter": "EedDl",
+    "brightness": 0,
+    "contrast": 0,
+    "saturation": 0,
+    "hue": 0,
+    "rotate": 0,
+    "webcontrol_port": 8080,
+    "stream_port": 8090,
+    "stream_quality": 100,
+    "width": 640,
+    "height": 360,
+    "threshold_tune": "on",
+    "threshold_percent": 2,
+    "threshold": 4608,
+    "lightswitch": 0,
+    "interval": 3600,
+    "type": "netcam",
+    "stream_auth_method": "Basic",
+    "username": "username",
+    "password": "password"
+  },
+  "cameras": [
+    {
+      "id": 0,
+      "type": "netcam",
+      "name": "dogshed",
+      "models": [],
+      "fov": 60,
+      "width": 640,
+      "height": 360,
+      "framerate": 5,
+      "event_gap": 30,
+      "target_dir": "/var/www/localhost/htdocs/cameras/dogshed",
+      "server": 1,
+      "cnum": 1,
+      "conf": "/etc/motion/dogshed.conf",
+      "mjpeg_url": "http://127.0.0.1:8090/1",
+      "rotate": 0,
+      "picture_quality": 100,
+      "stream_quality": 100,
+      "threshold_percent": 2,
+      "threshold": 4608,
+      "netcam_url": "rtsp://192.168.1.221/live",
+      "netcam_userpass": "username:password",
+      "keepalive": "on"
+    }
+  ]
+}
+--!>
 
 <script>
 var config_request = new XMLHttpRequest();
@@ -262,19 +408,29 @@ config_request.onreadystatechange = function() {
   if (this.readyState == 4 && this.status == 200 && this.responseText != null) {
     var jobj = JSON.parse(this.responseText);
     if (jobj != null) {
-      var str = '<table>';
-      str += '<tr><th align="right">Configuration:</th><td>' + jobj["config_path"] + '</td></tr>';
-      str += '<tr><th align="right">IP address:</th><td>' + jobj["ipaddr"] + '</td></tr>';
-      str += '<tr><th align="right">Hostname:</th><td>' + jobj["hostname"] + '</td></tr>';
-      str += '<tr><th align="right">Architecture:</th><td>' + jobj["arch"] + '</td></tr>';
-      str += '<tr><th align="right">Device:</th><td>' + jobj["device"] + '</td></tr>';
-      str += '<tr><th align="right">Group:</th><td>' + jobj["group"] + '</td></tr>';
-      str += '<tr><th align="right">Timezone:</th><td>' + jobj["timezone"] + '</td></tr>';
-      str += '<tr><th align="right">Unit system:</th><td>' + jobj["unit_system"] + '</td></tr>';
+      var timestamp = jobj["timestamp"];
+      var config = jobj["config"];
+      var str = '<table border="1">';
+      str += '<tr><td align="right">Last Status:</td><td>' + timestamp '</td></tr>';
+      str += '<tr><td align="right">Group/Device:</td><td>' + config.group + '/' + config.device + '</td></tr>';
+      str += '<tr><td align="right">Broker:</td><td><code>mqtt://' + config.mqtt.broker + ':' + config.mqtt.port + '/</code></td></tr>';
+      str += '<tr><td align="right">Cameras:</td><td>'
+      config.cameras.forEach(function(item,index) {
+        str += '<table>';
+        str += '<tr><td align="right"><b>Name:</b></td><td>' + item.name + '</td></tr>';
+        str += '<tr><td align="right">Type:</td><td>' + item.type + '</td></tr>';
+        str += '<tr><td align="right">URL:</td><td><a href="' + item.mjpeg_url + '">' + item.mjpeg_url + '</a></td></tr>';
+        str += '<tr><td align="right">Rotate:</td><td>' + item.rotate + '</td></tr>';
+        str += '<tr><td align="right">Framerate:</td><td>' + item.framerate + '</td></tr>';
+        str += '<tr><td align="right">Threshold:</td><td>' + item.threshold + ' (' + item.threshold_percent + '%)' + '</td></tr>';
+        str += '<tr><td align="right">Size:</td><td>' + item.width + 'x' + item.height + '</td></tr>';
+        str += '</table>';
+      });
+      str += '</td></tr>'
       str += '</table>';
-      horizon_output.innerHTML = str;
-      document.getElementById('exchange_url').innerHTML = jobj["device"];
-      document.getElementById('exchange_org').innerHTML = jobj["group"];
+      config_output.innerHTML = str;
+      document.getElementById('group_id').innerHTML = config.group;
+      document.getElementById('device_id').innerHTML = config.device;
     }
   }
 }
@@ -337,7 +493,7 @@ services_request.onreadystatechange = function() {
     // console.log("services_request: bad response; ready: " + this.readyState + "; status: " + this.status);
   }
 }
-services_request.open("GET","/cgi-bin/cameras", true);
+services_request.open("GET","/cgi-bin/config", true);
 services_request.send();
 </script>
 
@@ -1049,8 +1205,8 @@ MAIN BODY
 
 <table border="0">
 <tr>
-<td><b><code>EXCHANGE:</code></b></td><td><code><div id="exchange_url"></div></code></td>
-<td><b><code>ORGANIZATION:</code></b></td><td><code><div id="exchange_org"></div></code></td>
+<td><b><code>GROUP:</code></b></td><td><code><div id="group_id"></div></code></td>
+<td><b><code>DEVICE:</code></b></td><td><code><div id="device_id"></div></code></td>
 </tr>
 </table>
 
@@ -1062,7 +1218,7 @@ MAIN BODY
   <button class="tablinks" onclick="openTab(event, 'nodes_tab')">Nodes</button>
   <button class="tablinks" onclick="openTab(event, 'services_tab')">Services</button>
   <button class="tablinks" onclick="openTab(event, 'patterns_tab')">Patterns</button>
-  <button class="tablinks" onclick="openTab(event, 'exchange_tab')">Exchange</button>
+  <button class="tablinks" onclick="openTab(event, 'cameras_tab')">Exchange</button>
 </div>         
                 
 <div id="matrix_tab" class="tabcontent">
@@ -1088,7 +1244,8 @@ MAIN BODY
 <div id="labels_tab" class="tabcontent"><div id="label_output"></div></div>
 <div id="services_tab" class="tabcontent"><div id="service_output"></div></div>
 <div id="patterns_tab" class="tabcontent"><div id="pattern_output"></div></div>
-<div id="exchange_tab" class="tabcontent"><div id="horizon_output"></div></div>
+<div id="cameras_tab" class="tabcontent"><div id="cameras_output"></div></div>
+<div id="config_tab" class="tabcontent"><div id="config_output"></div></div>
 
 <div id="loading" class="loader"></div>
 

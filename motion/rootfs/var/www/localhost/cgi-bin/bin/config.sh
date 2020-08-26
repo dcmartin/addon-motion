@@ -11,7 +11,9 @@
 ###
 
 if [ -s /etc/motion/motion.json ]; then
+  echo '{"timestamp":"'$(date -u +%FZ%TZ)'","config":['; \
   cat /etc/motion/motion.json
+  echo ']}'
 else
   echo 'null'
 fi
