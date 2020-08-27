@@ -1213,16 +1213,15 @@ MAIN BODY
 <hr>
 
 <div class="tab">           
-  <button class="tablinks" id="defaultTab" onclick="openTab(event, 'matrix_tab')">Matrix</button>
+  <button class="tablinks" id="defaultTab" onclick="openTab(event, 'config_tab')">Configuration</button>
+  <button class="tablinks" onclick="openTab(event, 'cameras_tab')">Exchange</button>
+  <button class="tablinks" onclick="openTab(event, 'matrix_tab')">Matrix</button>
   <button class="tablinks" onclick="openTab(event, 'labels_tab')">Catalog</button>
   <button class="tablinks" onclick="openTab(event, 'nodes_tab')">Nodes</button>
   <button class="tablinks" onclick="openTab(event, 'services_tab')">Services</button>
-  <button class="tablinks" onclick="openTab(event, 'patterns_tab')">Patterns</button>
-  <button class="tablinks" onclick="openTab(event, 'cameras_tab')">Exchange</button>
 </div>         
                 
 <div id="matrix_tab" class="tabcontent">
-
 <table border="0">
 <tr>
 <td><b><code>SHOWN:</code></b></td><td><code><div id="node_show"></div></code></td>
@@ -1234,18 +1233,16 @@ MAIN BODY
 <b><code>SEARCH:</code></b><input type="text" class="search" id="nodename" autocomplete="off" value=""></input>
 <b><code>RANGE:</code></b><input type="range" class="slider" id="agerange" min="1" max="100" step="1" value="100"></input>
 </div>
-
 <hr>
-
 <div id="matrix_output"></div>
 </div>
 
+<div id="cameras_tab" class="tabcontent"><div id="cameras_output"></div></div>
+<div id="config_tab" class="tabcontent"><div id="config_output"></div></div>
 <div id="nodes_tab" class="tabcontent"><div id="node_output"></div></div>
 <div id="labels_tab" class="tabcontent"><div id="label_output"></div></div>
 <div id="services_tab" class="tabcontent"><div id="service_output"></div></div>
 <div id="patterns_tab" class="tabcontent"><div id="pattern_output"></div></div>
-<div id="cameras_tab" class="tabcontent"><div id="cameras_output"></div></div>
-<div id="config_tab" class="tabcontent"><div id="config_output"></div></div>
 
 <div id="loading" class="loader"></div>
 
