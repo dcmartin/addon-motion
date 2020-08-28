@@ -1305,7 +1305,7 @@ if [ -z "${MOTION_APACHE_HOST:-}" ]; then
   hzn::log.error "Missing Apache ServerName"
   exit 1
 fi
-if [ -z "${MOTION_APACHE_HOST:-}" ]; then
+if [ -z "${MOTION_APACHE_ADMIN:-}" ]; then
   hzn::log.error "Missing Apache ServerAdmin"
   exit 1
 fi
