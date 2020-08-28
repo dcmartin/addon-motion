@@ -198,7 +198,6 @@ function motion::config.process.mqtt()
 
   # local json server (hassio addon)
   value=$(echo "${config}" | jq -r ".host")
-  if [ "${value}" = 'null' ] || [ -z "${value}" ]; then value="core-mosquitto"; fi
   hzn::log.debug "Using MQTT host: ${value}"
   json='{"host":"'"${value}"'"'
 
