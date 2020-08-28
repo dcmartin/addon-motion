@@ -77,6 +77,7 @@ RUN \
 
 RUN apk add --no-cache \
   openssh-client \
+  samba \
   sudo
 
 # environment

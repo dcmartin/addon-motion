@@ -1,10 +1,9 @@
 {
-    "squash": false,
-    "build_from": {
-        "amd64": "hassioaddons/base-amd64:7.1.1",
-        "aarch64": "hassioaddons/base-aarch64:7.1.1",
-        "armv7": "hassioaddons/base-armv7:7.1.1",
-        "armhf": "hassioaddons/base-armhf:7.1.1"
-    },
-    "args": {}
+  "squash": false,
+  "build_from": {
+    "amd64": "${DOCKER_REPOSITORY}/amd64_com.github.dcmartin.open-horizon.base-alpine:0.2.0",
+    "arm": "${DOCKER_REPOSITORY}/arm_com.github.dcmartin.open-horizon.base-alpine:0.2.0",
+    "arm64": "${DOCKER_REPOSITORY}/arm64_com.github.dcmartin.open-horizon.base-alpine:0.2.0"
+  },
+  "args": {}
 }
