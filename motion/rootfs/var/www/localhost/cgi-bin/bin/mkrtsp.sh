@@ -4,7 +4,7 @@ find_rtsp()
 {
   if [ "${DEBUG:-false}" = 'true' ]; then echo "${FUNCNAME[0]} ${*}" &> /dev/stderr; fi
 
-  local result
+  local result=$(find-rtsp.sh)
   echo ${result:-null}
 }
 

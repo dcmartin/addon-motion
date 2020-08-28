@@ -75,7 +75,7 @@ RUN \
     rm -rf /tmp/*
 
 RUN apk add --no-cache \
-  openssh-client
+  openssh-client samba
 
 # environment
 ENV CONFIG_PATH /data/options.json
