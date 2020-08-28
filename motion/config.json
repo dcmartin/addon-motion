@@ -1,8 +1,8 @@
 {
-  "name": "Motion Server",
-  "version": "0.10.4",
+  "name": "Motion-Ã👁",
+  "version": "0.10.5",
   "slug": "motion",
-  "description": "Motion server; network cameras only; no device support.",
+  "description": "Video and audio surveillance with AI detection and classification",
   "url": "https://github.com/dcmartin/addon-motion/",
   "webui": "http://[HOST]:[PORT:7999]/",
   "startup": "application",
@@ -14,7 +14,9 @@
   ],
   "ingress": true,
   "ingress_port": 7999,
-  "devices": [],
+  "devices": [
+    "/dev/video0:/dev/video0:rwm"
+  ],
   "hassio_api": true,
   "hassio_role": "default",
   "host_network": true,
@@ -70,6 +72,13 @@
     "client": "hostname",
     "timezone": "America/Los_Angeles",
     "cameras": [
+      {
+        "name": "ps3eye",
+        "type": "local",
+        "rotate": 0,
+        "width": 640,
+        "height": 480
+      },
       {
         "name": "wyzecam",
         "type": "netcam",
@@ -129,7 +138,7 @@
     "cameras": [
       {
         "name": "str",
-        "type": "list(netcam|ftpd|mqtt)",
+        "type": "list(local|netcam|ftpd|mqtt)?",
         "brightness": "int?",
         "changes": "list(on|off)?",
         "contrast": "int?",
