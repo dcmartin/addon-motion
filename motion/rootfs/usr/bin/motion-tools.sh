@@ -162,7 +162,7 @@ motion::config.file()
   echo "${conf:-}"
 }
 
-motion::restart()
+motion::restart.camera()
 {
   hzn::log.debug "${FUNCNAME[0]} ${*}"
 
