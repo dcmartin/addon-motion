@@ -73,14 +73,14 @@
     "timezone": "America/Los_Angeles",
     "cameras": [
       {
-        "name": "testcam-local",
+        "name": "local",
         "type": "local",
         "rotate": 0,
         "width": 640,
         "height": 480
       },
       {
-        "name": "testcam-rtsp",
+        "name": "rtsp",
         "type": "netcam",
         "width": 640,
         "height": 360,
@@ -88,7 +88,7 @@
         "netcam_userpass": "!secret motioncam-userpass"
       },
       {
-        "name": "testcam-mjpeg",
+        "name": "mjpeg",
         "type": "netcam",
         "width": 640,
         "height": 480,
@@ -96,7 +96,7 @@
         "netcam_userpass": "!secret netcam-userpass"
       },
       {
-        "name": "testcam-jpeg",
+        "name": "jpeg",
         "type": "netcam",
         "width": 640,
         "height": 480,
