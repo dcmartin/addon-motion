@@ -68,23 +68,39 @@
       "password": "!secret mqtt-password"
     },
     "group": "motion",
-    "device": "hostname",
-    "client": "hostname",
+    "device": "testcam",
+    "client": "testcam",
     "timezone": "America/Los_Angeles",
     "cameras": [
       {
-        "name": "ps3eye",
+        "name": "testcam-local",
         "type": "local",
         "rotate": 0,
         "width": 640,
         "height": 480
       },
       {
-        "name": "wyzecam",
+        "name": "testcam-rtsp",
         "type": "netcam",
         "width": 640,
         "height": 360,
         "netcam_url": "rtsp://192.168.1.223/live",
+        "netcam_userpass": "!secret motioncam-userpass"
+      },
+      {
+        "name": "testcam-mjpeg",
+        "type": "netcam",
+        "width": 640,
+        "height": 480,
+        "netcam_url": "http://192.168.1.162/nphMotionJpeg?Resolution=640x480&Quality=Clarity",
+        "netcam_userpass": "!secret netcam-userpass"
+      },
+      {
+        "name": "testcam-jpeg",
+        "type": "netcam",
+        "width": 640,
+        "height": 480,
+        "netcam_url": "http://192.168.1.163/img/snapshot.cgi",
         "netcam_userpass": "!secret motioncam-userpass"
       }
     ]
