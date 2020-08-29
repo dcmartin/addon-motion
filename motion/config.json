@@ -31,7 +31,7 @@
     "config:rw"
   ],
   "panel_icon": "mdi:motion-sensor",
-  "panel_title": "Motion-AI",
+  "panel_title": "Motion-Ã👁",
   "panel_admin": true,
   "ports": {
     "7999/tcp": 7999,
