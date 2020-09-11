@@ -43,7 +43,7 @@ motion_event_animated()
   local result
   local jsonfile="${1}"
   local camera=$(jq -r '.camera' ${jsonfile})
-  local width=$(jq -r '.cameras[]|select(.name=="'${camera}'").width' $(motion::config.file))
+  local width=$(jq -r '.cameras[]|select(.name=="'${camera}'").width' $(motion::configuration.file))
   local movie=$(jq '.movie' ${jsonfile})
 
   if [ "${movie:-null}" != 'null' ]; then
@@ -129,7 +129,7 @@ motion_event_images_average()
   local result
 
   for jpg in ${jpgs}; do
-    local jpegfile=$(motion::config.target_dir)/${camera}/${jpg}.jpg
+    local jpegfile=$(motion::configuration.target_dir)/${camera}/${jpg}.jpg
 
     if [ -s ${jpegfile} ]; then
       jpegs=(${jpegs[@]} ${jpegfile})
@@ -164,7 +164,7 @@ motion_event_json()
   local ts="${2}"
   local en="${3}"
   local jsonfile
-  local dir="$(motion::config.target_dir)/${cn}"
+  local dir="$(motion::configuration.target_dir)/${cn}"
   local name="??????????????-${en}.json"
   local jsons=($(find "$dir" -name "${name}" -print))
 
@@ -219,7 +219,7 @@ motion_event_images()
   local camera=$(jq -r '.camera' ${jsonfile})
   local start=$(jq -r '.start' ${jsonfile})
   local end=$(jq -r '.end' ${jsonfile})
-  local dir="$(motion::config.target_dir)/${camera}"
+  local dir="$(motion::configuration.target_dir)/${camera}"
   local jpgs=($(find "${dir}" -name "[0-9][0-9]*-${event}-[0-9][0-9]*.jpg" -print | sort))
   local njpg=${#jpgs[@]}
 
@@ -268,7 +268,7 @@ motion_event_picture()
 
   local result
   local jsonfile="${1}"
-  local pp=$(motion::config.post_pictures)
+  local pp=$(motion::configuration.post_pictures)
   local nimage=$(jq '.images|length' ${jsonfile})
 
   case "${pp:-null}" in
@@ -295,7 +295,7 @@ motion_event_picture()
   if [ "${result:-null}" != 'null' ]; then
     local camera=$(jq -r '.camera' ${jsonfile})
 
-    result=$(motion::config.target_dir)/${camera}/${result}.jpg
+    result=$(motion::configuration.target_dir)/${camera}/${result}.jpg
   fi
   echo "${result:-}"
 }
@@ -346,7 +346,7 @@ motion_publish_event()
   jq -c '.date='$(date -u +%s)'|.timestamp.publish="'${timestamp}'"' ${jsonfile} > ${jsonfile}.$$ && mv -f ${jsonfile}.$$ ${jsonfile}
   if [ -s "${jsonfile}" ]; then
     # publish JSON to MQTT
-    motion::mqtt.pub -q 2 -t "$(motion::config.group)/${device}/${camera}/event/end" -f "${jsonfile}" && rm -f ${temp} || result=false
+    motion::mqtt.pub -q 2 -t "$(motion::configuration.group)/${device}/${camera}/event/end" -f "${jsonfile}" && rm -f ${temp} || result=false
     result='true'
   else
     hzn::log.error "${FUNCNAME[0]} failed to flatten and timestamp; metadata: $(jq -c '.image=(.image!=null)' ${jsonfile})"
@@ -366,7 +366,7 @@ motion_publish_average()
 
   if [ -s "${avgfile}" ]; then
     result="${avgfile}"
-    motion::mqtt.pub -q 2 -t "$(motion::config.group)/${device}/${camera}/image-average" -f "${avgfile}" || result=false
+    motion::mqtt.pub -q 2 -t "$(motion::configuration.group)/${device}/${camera}/image-average" -f "${avgfile}" || result=false
   else
     hzn::log.error "${FUNCNAME[0]} failed to calculate average image; metadata: $(jq -c '.image=(.image!=null)' ${jsonfile})"
   fi
@@ -382,7 +382,7 @@ motion_publish_animated()
   local giffile=$(motion_event_animated ${jsonfile})
 
   if [ -s "${giffile}" ]; then
-    motion::mqtt.pub -q 2 -t "$(motion::config.group)/${device}/${camera}/image-animated" -f "${giffile}" || result=false
+    motion::mqtt.pub -q 2 -t "$(motion::configuration.group)/${device}/${camera}/image-animated" -f "${giffile}" || result=false
     rm -f "${giffile}"
     result='true'
   else
@@ -401,7 +401,7 @@ motion_publish_annotated()
   local annfile=$(motion_event_annotated ${jsonfile} ${jpgfile})
 
   if [ -s "${annfile}" ]; then
-    motion::mqtt.pub -q 2 -t "$(motion::config.group)/${device}/${camera}/event/end/" -f "${annfile}" || result=false
+    motion::mqtt.pub -q 2 -t "$(motion::configuration.group)/${device}/${camera}/event/end/" -f "${annfile}" || result=false
     result="${annfile}"
   else
     hzn::log.error "${FUNCNAME[0]} failed annotated image; metadata: $(jq -c '.image=(.image!=null)' ${jsonfile})"
@@ -431,7 +431,7 @@ motion_event_process()
     local device=$(jq -r '.device' ${jsonfile})
 
     # publish JPEG to MQTT
-    motion::mqtt.pub -q 2 -t "$(motion::config.group)/${device}/${camera}/image/end" -f "${jpgfile}" || result=false
+    motion::mqtt.pub -q 2 -t "$(motion::configuration.group)/${device}/${camera}/image/end" -f "${jpgfile}" || result=false
   else
     hzn::log.error "${FUNCNAME[0]} NO KEY FRAME: $(jq -c '.' ${jsonfile})"
     result='false'
@@ -497,14 +497,14 @@ motion_event_end()
   
         # process multi-image event with legacy code
         export \
-          MOTION_GROUP=$(motion::config.group) \
-          MOTION_DEVICE=$(motion::config.device) \
-          MOTION_JSON_FILE=$(motion::config.file) \
-          MOTION_TARGET_DIR=$(motion::config.target_dir) \
-          MOTION_MQTT_HOST=$(echo $(motion::config.mqtt) | jq -r '.host') \
-          MOTION_MQTT_PORT=$(echo $(motion::config.mqtt) | jq -r '.port') \
-          MOTION_MQTT_USERNAME=$(echo $(motion::config.mqtt) | jq -r '.username') \
-          MOTION_MQTT_PASSWORD=$(echo $(motion::config.mqtt) | jq -r '.password') \
+          MOTION_GROUP=$(motion::configuration.group) \
+          MOTION_DEVICE=$(motion::configuration.device) \
+          MOTION_JSON_FILE=$(motion::configuration.file) \
+          MOTION_TARGET_DIR=$(motion::configuration.target_dir) \
+          MOTION_MQTT_HOST=$(echo $(motion::configuration.mqtt) | jq -r '.host') \
+          MOTION_MQTT_PORT=$(echo $(motion::configuration.mqtt) | jq -r '.port') \
+          MOTION_MQTT_USERNAME=$(echo $(motion::configuration.mqtt) | jq -r '.username') \
+          MOTION_MQTT_PASSWORD=$(echo $(motion::configuration.mqtt) | jq -r '.password') \
           MOTION_LOG_LEVEL=${MOTION_LOG_LEVEL} \
           MOTION_LOGTO=${MOTION_LOGTO} \
           MOTION_FRAME_SELECT='key' \

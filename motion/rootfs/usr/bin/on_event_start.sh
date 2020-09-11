@@ -30,10 +30,10 @@ on_event_start()
   local TS="${YR}${MO}${DY}${HR}${MN}${SC}"
   #local NOW=$(motion::util.dateconv -i '%Y%m%d%H%M%S' -f "%s" "$ts")
   local NOW=$(date -u +%s)
-  local dir=$(motion::config.target_dir)
+  local dir=$(motion::configuration.target_dir)
   local timestamp=$(date -u +%FT%TZ)
   local EJ="${dir}/${CN}/${TS}-${EN}.json"
-  local event='{"group":"'$(motion::config.group)'","device":"'$(motion::config.device)'","camera":"'${CN}'","event":"'${EN}'","start":'${NOW}',"timestamp":{"start":"'${timestamp}'"}}'
+  local event='{"group":"'$(motion::configuration.group)'","device":"'$(motion::configuration.device)'","camera":"'${CN}'","event":"'${EN}'","start":'${NOW}',"timestamp":{"start":"'${timestamp}'"}}'
 
   if [ -s "${EJ}" ]; then
     jq '.+='"${event}" ${EJ} > ${EJ}.$$ && mv -f ${EJ}.$$ ${EJ} 
@@ -43,7 +43,7 @@ on_event_start()
 
   if [ -s "${EJ:-}" ]; then
     # send MQTT
-    motion::mqtt.pub -q 2 -t "$(motion::config.group)/$(motion::config.device)/${CN}/event/start" -f "$EJ"
+    motion::mqtt.pub -q 2 -t "$(motion::configuration.group)/$(motion::configuration.device)/${CN}/event/start" -f "$EJ"
   else
     hzn::log.error "${FUNCNAME[0]} Failure processing START event: ${*}"
   fi

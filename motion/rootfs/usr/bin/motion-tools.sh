@@ -47,26 +47,26 @@ motion::util.dateconv()
 ### CONFIGURATION
 ###
 
-motion::config.target_dir()
+motion::configuration.target_dir()
 {
   hzn::log.trace "${FUNCNAME[0]}"
 
-  local file=$(motion::config.file)
+  local file=$(motion::configuration.file)
   local result=""
 
   if [ -s "${file}" ]; then
-    result=$(jq -r '.motion::target_dir' ${file})
+    result=$(jq -r '.motion.target_dir' ${file})
   else
     hzn::log.warn "no configuration JSON: ${file}"
   fi
   echo "${result:-}"
 }
 
-motion::config.share_dir()
+motion::configuration.share_dir()
 {
   hzn::log.trace "${FUNCNAME[0]}"
 
-  local file=$(motion::config.file)
+  local file=$(motion::configuration.file)
   local result=""
 
   if [ -s "${file}" ]; then
@@ -77,11 +77,11 @@ motion::config.share_dir()
   echo "${result:-}"
 }
 
-motion::config.group()
+motion::configuration.group()
 {
   hzn::log.trace "${FUNCNAME[0]}"
 
-  local file=$(motion::config.file)
+  local file=$(motion::configuration.file)
   local result=""
 
   if [ -s "${file}" ]; then
@@ -92,11 +92,11 @@ motion::config.group()
   echo "${result:-}"
 }
 
-motion::config.device()
+motion::configuration.device()
 {
   hzn::log.trace "${FUNCNAME[0]}"
 
-  local file=$(motion::config.file)
+  local file=$(motion::configuration.file)
   local result=""
 
   if [ -s "${file}" ]; then
@@ -107,11 +107,11 @@ motion::config.device()
   echo "${result:-}"
 }
 
-motion::config.mqtt()
+motion::configuration.mqtt()
 {
   hzn::log.trace "${FUNCNAME[0]}"
 
-  local file=$(motion::config.file)
+  local file=$(motion::configuration.file)
   local result="null"
 
   if [ -s "${file}" ]; then
@@ -122,11 +122,11 @@ motion::config.mqtt()
   echo "${result:-}"
 }
 
-motion::config.cameras()
+motion::configuration.cameras()
 {
   hzn::log.trace "${FUNCNAME[0]}"
 
-  local file=$(motion::config.file)
+  local file=$(motion::configuration.file)
   local result="null"
 
   if [ -s "${file}" ]; then
@@ -135,28 +135,28 @@ motion::config.cameras()
   echo "${result:-}"
 }
 
-motion::config.post_pictures()
+motion::configuration.post_pictures()
 {
   hzn::log.trace "${FUNCNAME[0]}"
 
-  local file=$(motion::config.file)
+  local file=$(motion::configuration.file)
   local result=""
 
   if [ -s "${file}" ]; then
-    result=$(jq -r '.motion::post_pictures' ${file})
+    result=$(jq -r '.motion.post_pictures' ${file})
   fi
   echo "${result:-}"
 }
 
-motion::config.file()
+motion::configuration.file()
 {
   hzn::log.trace "${FUNCNAME[0]}"
 
   local conf="${MOTION_CONF:-}"
   if [ ! -z "${conf:-}" ]; then
-    conf="${MOTION_CONF%/*}/motion::json"
+    conf="${MOTION_CONF%/*}/motion.json"
   else
-    conf="/etc/motion/motion::json"
+    conf="/etc/motion/motion.json"
     hzn::log.warn "using default, static, motion configuration JSON file: ${conf}"
   fi
   echo "${conf:-}"
@@ -225,12 +225,11 @@ motion::_mqtt.pub()
   local code
   local err
 
-  if [ ! -z "$(motion::config.file)" ] && [ -s $(motion::config.file) ]; then
-    local username=$(echo $(motion::config.mqtt) | jq -r '.username')
-    local port=$(echo $(motion::config.mqtt) | jq -r '.port')
-    local host=$(echo $(motion::config.mqtt) | jq -r '.host')
-    local password=$(echo $(motion::config.mqtt) | jq -r '.password')
-    local temp=$(mktemp)
+  if [ ! -z "$(motion::configuration.file)" ] && [ -s $(motion::configuration.file) ]; then
+    local username=$(echo $(motion::configuration.mqtt) | jq -r '.username')
+    local port=$(echo $(motion::configuration.mqtt) | jq -r '.port')
+    local host=$(echo $(motion::configuration.mqtt) | jq -r '.host')
+    local password=$(echo $(motion::configuration.mqtt) | jq -r '.password')
 
     if [ ! -z "${ARGS}" ]; then
       if [ ! -z "${username}" ] && [ "${username}" != 'null' ]; then
@@ -239,7 +238,7 @@ motion::_mqtt.pub()
       if [ ! -z "${password}" ] && [ "${password}" != 'null' ]; then
 	ARGS='-P '"${password}"' '"${ARGS}"
       fi
-      mosquitto_pub -i "$(motion::config.device)" -h "${host}" -p "${port}" ${ARGS} &> ${temp}
+      mosquitto_pub -i "$(motion::configuration.device)" -h "${host}" -p "${port}" ${ARGS} &> ${temp}
       code=$?
       if [ -s "${temp}" ]; then err=$(cat ${temp}); fi
       rm -f ${temp}

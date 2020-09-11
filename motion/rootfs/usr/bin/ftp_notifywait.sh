@@ -10,7 +10,7 @@ ftp_notifywait()
 {
   hzn::log.debug "${FUNCNAME[0]} ${*}"
 
-  local cameras=$(motion::config.cameras)
+  local cameras=$(motion::configuration.cameras)
 
   for name in $(echo "${cameras}" | jq -r '.[]|.name'); do
     local type=$(echo "${cameras}" | jq -r '.[]|select(.name=="'"${name}"'").type')

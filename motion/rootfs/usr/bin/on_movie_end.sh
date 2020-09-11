@@ -38,7 +38,7 @@ on_movie_end()
   local timestamp=$(date -u +%FT%TZ)
 
   local jsonfile
-  local dir="$(motion::config.target_dir)/${CN}"
+  local dir="$(motion::configuration.target_dir)/${CN}"
   local name="??????????????-${EN}.json"
   local jsons=($(find "$dir" -name "${name}" -print))
 

@@ -28,8 +28,8 @@ on_camera_found()
   #local NOW=$(motion::util.dateconv -i '%Y%m%d%H%M%S' -f "%s" "${TS}")
   local NOW=$(date -u +%s)
   local timestamp=$(date -u +%FT%TZ)
-  local topic="$(motion::config.group)/$(motion::config.device)/${CN}/status/found"
-  local message='{"group":"'$(motion::config.group)'","device":"'$(motion::config.device)'","camera":"'"${CN}"'","date":'"${NOW}"',"timestamp":"'${timestamp:-none}'","status":"found"}'
+  local topic="$(motion::configuration.group)/$(motion::configuration.device)/${CN}/status/found"
+  local message='{"group":"'$(motion::configuration.group)'","device":"'$(motion::configuration.device)'","camera":"'"${CN}"'","date":'"${NOW}"',"timestamp":"'${timestamp:-none}'","status":"found"}'
 
   hzn::log.notice "Camera found: ${CN}; $(echo "${message:-null}" | jq -c '.')"
 
@@ -43,11 +43,11 @@ camera_mqtt_found_reset()
 
   # clean any retained messages
   if [ "${CN:-null}" != 'null' ]; then
-    motion::mqtt.pub -q 2 -r -t "$(motion::config.group)/$(motion::config.device)/${CN}/event" -n
-    motion::mqtt.pub -q 2 -r -t "$(motion::config.group)/$(motion::config.device)/${CN}/event/start" -n
-    motion::mqtt.pub -q 2 -r -t "$(motion::config.group)/$(motion::config.device)/${CN}/event/end" -n
-    motion::mqtt.pub -q 2 -r -t "$(motion::config.group)/$(motion::config.device)/${CN}/image" -n
-    motion::mqtt.pub -q 2 -r -t "$(motion::config.group)/$(motion::config.device)/${CN}/image/end" -n
+    motion::mqtt.pub -q 2 -r -t "$(motion::configuration.group)/$(motion::configuration.device)/${CN}/event" -n
+    motion::mqtt.pub -q 2 -r -t "$(motion::configuration.group)/$(motion::configuration.device)/${CN}/event/start" -n
+    motion::mqtt.pub -q 2 -r -t "$(motion::configuration.group)/$(motion::configuration.device)/${CN}/event/end" -n
+    motion::mqtt.pub -q 2 -r -t "$(motion::configuration.group)/$(motion::configuration.device)/${CN}/image" -n
+    motion::mqtt.pub -q 2 -r -t "$(motion::configuration.group)/$(motion::configuration.device)/${CN}/image/end" -n
   fi
 }
 

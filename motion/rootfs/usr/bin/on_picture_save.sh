@@ -42,14 +42,14 @@ on_picture_save()
   local timestamp=$(date -u +%FT%TZ)
 
   # create JSON
-  echo '{"device":"'$(motion::config.device)'","camera":"'"${CN}"'","type":"jpeg","timestamp":"'${timestamp}'","date":'"${NOW}"',"seqno":"'"${SN}"'","event":"'"${EN}"'","id":"'"${ID}"'","center":{"x":'"${MX}"',"y":'"${MY}"'},"width":'"${MW}"',"height":'"${MH}"',"size":'${SZ}',"noise":'${NL}'}' > "${IF%.*}.json"
+  echo '{"device":"'$(motion::configuration.device)'","camera":"'"${CN}"'","type":"jpeg","timestamp":"'${timestamp}'","date":'"${NOW}"',"seqno":"'"${SN}"'","event":"'"${EN}"'","id":"'"${ID}"'","center":{"x":'"${MX}"',"y":'"${MY}"'},"width":'"${MW}"',"height":'"${MH}"',"size":'${SZ}',"noise":'${NL}'}' > "${IF%.*}.json"
 
   # only post when/if
-  if [ $(motion::config.post_pictures) = "on" ]; then
+  if [ $(motion::configuration.post_pictures) = "on" ]; then
     # post JSON
-    motion::mqtt.pub -q 2 -t "$(motion::config.group)/$(motion::config.device)/$CN/event/image" -f "${IF%.*}.json"
+    motion::mqtt.pub -q 2 -t "$(motion::configuration.group)/$(motion::configuration.device)/$CN/event/image" -f "${IF%.*}.json"
     # post JPEG
-    motion::mqtt.pub -q 2 -t "$(motion::config.group)/$(motion::config.device)/$CN/image" -f "${IF}"
+    motion::mqtt.pub -q 2 -t "$(motion::configuration.group)/$(motion::configuration.device)/$CN/image" -f "${IF}"
   fi
 }
 
