@@ -222,12 +222,15 @@ motion::status()
 motion::_mqtt.pub()
 {
   local ARGS=${*}
+  local code
+  local err
 
   if [ ! -z "$(motion::config.file)" ] && [ -s $(motion::config.file) ]; then
     local username=$(echo $(motion::config.mqtt) | jq -r '.username')
     local port=$(echo $(motion::config.mqtt) | jq -r '.port')
     local host=$(echo $(motion::config.mqtt) | jq -r '.host')
     local password=$(echo $(motion::config.mqtt) | jq -r '.password')
+    local temp=$(mktemp)
 
     if [ ! -z "${ARGS}" ]; then
       if [ ! -z "${username}" ] && [ "${username}" != 'null' ]; then
@@ -236,13 +239,32 @@ motion::_mqtt.pub()
       if [ ! -z "${password}" ] && [ "${password}" != 'null' ]; then
 	ARGS='-P '"${password}"' '"${ARGS}"
       fi
-      mosquitto_pub -i "$(motion::config.device)" -h "${host}" -p "${port}" ${ARGS}
+      mosquitto_pub -i "$(motion::config.device)" -h "${host}" -p "${port}" ${ARGS} &> ${temp}
+      code=$?
+      if [ -s "${temp}" ]; then err=$(cat ${temp}); fi
+      rm -f ${temp}
+    else
+      code=1
+      err="invalid arguments"
     fi
+  else
+    code=1
+    err="motion configuration; file not found or empty"
   fi
+  echo ${err:-null}
+  return ${code:-1}
 }
 
 motion::mqtt.pub()
 {
   hzn::log.trace "${FUNCNAME[0]} ${*}"
-  motion::_mqtt.pub "${*}"
+  local result=$(motion::_mqtt.pub ${*})
+  local code=$?
+
+  if [ ${code:-1} -ne 0 ]; then
+    hzn::log.error "${FUNCNAME[0]}: failed to publish MQTT message; args: ${*}; code: ${code}; result: ${result:-}"
+  else
+    hzn::log.debug "${FUNCNAME[0]}: published MQTT message; args: ${*}; code: ${code}; result: ${result:-}"
+  fi
+  return code
 }

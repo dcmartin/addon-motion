@@ -1,0 +1,12 @@
+#!/bin/bash
+
+if [ ! -z "${QUERY_STRING:-}" ]; then
+  camera=$(echo "$QUERY_STRING" | sed 's/.*camera=\([^&]*\).*/\1/')
+  if [ "${camera}" = "${QUERY_STRING}" ]; then camera=; fi
+fi
+
+echo "Content-Type: application/json; charset=utf-8"
+echo "Access-Control-Allow-Origin: *"
+echo "Cache-Control: no-cache"
+echo ""
+./bin/motion.restart.sh "${camera}"
