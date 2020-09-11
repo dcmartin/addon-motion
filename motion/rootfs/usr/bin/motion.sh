@@ -153,13 +153,13 @@ function motion::configure.camera()
   
   # width 
   VALUE=$(echo "${c}" | jq -r '.width')
-  if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ]; then VALUE=$(motion::configuration | jq -r '.width'); fi
+  if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ]; then VALUE=$(motion::configuration | jq -r '.default.width'); fi
   CAMERA=$(echo "${CAMERA}" | jq '.width='${VALUE})
   hzn::log.debug "${FUNCNAME[0]}: set width to ${VALUE}"
   
   # height 
   VALUE=$(echo "${c}" | jq -r '.height')
-  if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ]; then VALUE=$(motion::configuration | jq -r '.height'); fi
+  if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ]; then VALUE=$(motion::configuration | jq -r '.default.height'); fi
   CAMERA=$(echo "${CAMERA}" | jq '.height='${VALUE})
   hzn::log.debug "${FUNCNAME[0]}: set height to ${VALUE}"
   
@@ -167,7 +167,7 @@ function motion::configure.camera()
   VALUE=$(echo "${c}" | jq -r '.framerate')
   if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ] || [[ ${VALUE} < 1 ]]; then 
     VALUE=$(jq -r '.framerate' "${CONFIG_PATH}")
-    if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ] || [[ ${VALUE} < 1 ]]; then VALUE=$(motion::configuration | jq -r '.motion.framerate'); fi
+    if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ] || [[ ${VALUE} < 1 ]]; then VALUE=$(motion::configuration | jq -r '.default.framerate'); fi
   fi
   CAMERA=$(echo "${CAMERA}" | jq '.framerate='${VALUE})
   hzn::log.debug "${FUNCNAME[0]}: set framerate to ${VALUE}"
@@ -176,14 +176,14 @@ function motion::configure.camera()
   VALUE=$(echo "${c}" | jq -r '.event_gap')
   if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ] || [[ ${VALUE} < 1 ]]; then 
     VALUE=$(jq -r '.event_gap' "${CONFIG_PATH}")
-    if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ] || [[ ${VALUE} < 1 ]]; then VALUE=$(motion::configuration | jq -r '.motion.event_gap'); fi
+    if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ] || [[ ${VALUE} < 1 ]]; then VALUE=$(motion::configuration | jq -r '.default.event_gap'); fi
   fi
   CAMERA=$(echo "${CAMERA}" | jq '.event_gap='${VALUE})
   hzn::log.debug "${FUNCNAME[0]}: set event_gap to ${VALUE}"
   
   # target_dir 
   VALUE=$(echo "${c}" | jq -r '.target_dir')
-  if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ]; then VALUE=$(motion::configuration | jq -r '.target_dir')/$(echo "${CAMERA}" | jq -r '.name'); fi
+  if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ]; then VALUE=$(motion::configuration | jq -r '.motion.target_dir')/$(echo "${CAMERA}" | jq -r '.name'); fi
   CAMERA=$(echo "${CAMERA}" | jq '.target_dir="'${VALUE}'"')
   hzn::log.debug "${FUNCNAME[0]}: set target_dir to ${VALUE}"
   # ensure directory exists
@@ -372,7 +372,7 @@ function motion::configure.camera()
       else
         VALUE="/dev/video0"
       fi
-      CAMERA=$(echo "${CAMERA}" | jq '.device='${VALUE})
+      CAMERA=$(echo "${CAMERA}" | jq '.videodevice='${VALUE})
       hzn::log.debug "${FUNCNAME[0]}: set videodevice to ${VALUE}"
       # palette
       VALUE=$(jq -r '.cameras['${i}'].palette' "${CONFIG_PATH}")
@@ -393,64 +393,90 @@ function motion::configuration()
   jq -c '.' $(motion::configuration.file)
 }
 
-function motion::configuration.update()
+function motion::configuration.update.edit()
+{
+  hzn::log.trace "${FUNCNAME[0]} ${*}"
+  local option=${1}
+  local value=${2}
+
+  sed -i "s/.*${option}.*/${option} ${value}/" ${MOTION_CONF}
+}
+
+function motion::configuration.update.camera()
+{
+  hzn::log.trace "${FUNCNAME[0]} ${*}"
+  local cconf=${1}
+
+  echo "camera ${cconf}" >> "${MOTION_CONF}"
+}
+
+function motion::configuration.update.authentication()
 {
   hzn::log.trace "${FUNCNAME[0]} ${*}"
 
-  local config=$(motion::configuration)
-  local ncamera=$(echo "${config:-null}" | | jq '.cameras|length')
+  local username=$(motion::configuration | jq -r '.motion.username')
+  local password=$(motion::configuration | jq -r '.motion.password')
 
-  cp -f ${MOTION_CONF%%.*}.default ${MOTION_CONF}
+  if [ ! -z "${username:-}" ] && [ ! -z "${password:-}" ]; then
+    hzn::log.debug "${FUNCNAME[0]}: username and password specified; username: ${username}; password: ${password}"
+    motion::configuration.update.edit 'stream_authentication' "${username}:${password}"
+    motion::configuration.update.edit 'webcontrol_authentication' "${username}:${password}"
+    # turn off restriction to localhost-only
+    motion::configuration.update.edit 'stream_localhost' 'off'
+    motion::configuration.update.edit 'webcontrol_localhost' 'off'
+  else
+    hzn::log.warning "${FUNCNAME[0]}: username or password unspecified; username: ${username}; password: ${password}; localhost-only"
+    # turn off restriction to localhost-only
+    motion::configuration.update.edit 'stream_localhost' 'on'
+    motion::configuration.update.edit 'webcontrol_localhost' 'on'
+  fi
+}
 
-  sed -i "s|.*log_level.*|log_level $(motion::configuration| jq -r '.log_level')|" "${MOTION_CONF}"
+function motion::configuration.update.defaults()
+{
+  hzn::log.trace "${FUNCNAME[0]} ${*}"
+  local defaults=$(motion::configuration | jq '.default')
 
-  sed -i "s|.*log_type.*|log_type $(motion::configuration | jq -r '.motion.log_type')|" "${MOTION_CONF}"
-  sed -i "s|.*log_file.*|log_file $(motion::configuration | jq -r '.motion.log_file')|" "${MOTION_CONF}"
-  sed -i "s|.*target_dir.*|target_dir ${VALUE}|" "${MOTION_CONF}"
-  sed -i "s/.*auto_brightness.*/auto_brightness ${VALUE}/" "${MOTION_CONF}"
-  sed -i "s/.*locate_motion_mode.*/locate_motion_mode ${VALUE}/" "${MOTION_CONF}"
-  sed -i "s/.*locate_motion_style.*/locate_motion_style ${VALUE}/" "${MOTION_CONF}"
-  sed -i "s/^picture_output .*/picture_output ${VALUE}/" "${MOTION_CONF}"
-  sed -i "s/^movie_output .*/movie_output ${VALUE}/" "${MOTION_CONF}"
-  sed -i "s/^movie_output_motion .*/movie_output_motion ${VALUE}/" "${MOTION_CONF}"
-  sed -i "s/.*picture_type .*/picture_type ${VALUE}/" "${MOTION_CONF}"
-  sed -i "s/.*netcam_keepalive .*/netcam_keepalive ${VALUE}/" "${MOTION_CONF}"
-  sed -i "s/.*netcam_userpass .*/netcam_userpass ${VALUE}/" "${MOTION_CONF}"
-  sed -i "s/.*v4l2_palette\s[0-9]\+/v4l2_palette ${VALUE}/" "${MOTION_CONF}"
-  sed -i "s/.*pre_capture\s[0-9]\+/pre_capture ${VALUE}/" "${MOTION_CONF}"
-  sed -i "s/.*post_capture\s[0-9]\+/post_capture ${VALUE}/" "${MOTION_CONF}"
-  sed -i "s/.*event_gap\s[0-9]\+/event_gap ${VALUE}/" "${MOTION_CONF}"
-  sed -i "s/.*minimum_motion_frames\s[0-9]\+/minimum_motion_frames ${VALUE}/" "${MOTION_CONF}"
-  sed -i "s/.*picture_quality\s[0-9]\+/picture_quality ${VALUE}/" "${MOTION_CONF}"
-  sed -i "s/.*stream_quality\s[0-9]\+/stream_quality ${VALUE}/" "${MOTION_CONF}"
-  sed -i "s/.*framerate\s[0-9]\+/framerate ${VALUE}/" "${MOTION_CONF}"
-  sed -i "s/.*text_changes\s[0-9]\+/text_changes ${VALUE}/" "${MOTION_CONF}"
-  sed -i "s/.*text_scale\s[0-9]\+/text_scale ${VALUE}/" "${MOTION_CONF}"
-  sed -i "s/.*despeckle_filter\s[0-9]\+/despeckle_filter ${VALUE}/" "${MOTION_CONF}"
-  sed -i "s/brightness=[0-9]\+/brightness=${VALUE}/" "${MOTION_CONF}"
-  sed -i "s/contrast=[0-9]\+/contrast=${VALUE}/" "${MOTION_CONF}"
-  sed -i "s/saturation=[0-9]\+/saturation=${VALUE}/" "${MOTION_CONF}"
-  sed -i "s/hue=[0-9]\+/hue=${VALUE}/" "${MOTION_CONF}"
-  sed -i "s/.*rotate\s[0-9]\+/rotate ${VALUE}/" "${MOTION_CONF}"
-  sed -i "s/.*webcontrol_port\s[0-9]\+/webcontrol_port ${VALUE}/" "${MOTION_CONF}"
-  sed -i "s/.*stream_port\s[0-9]\+/stream_port ${VALUE}/" "${MOTION_CONF}"
-  sed -i "s/.*width\s[0-9]\+/width ${VALUE}/" "${MOTION_CONF}"
-  sed -i "s/.*height\s[0-9]\+/height ${VALUE}/" "${MOTION_CONF}"
-  sed -i "s/.*threshold_tune .*/threshold_tune ${VALUE}/" "${MOTION_CONF}"
-  sed -i "s/.*threshold.*/threshold ${VALUE}/" "${MOTION_CONF}"
-  sed -i "s/.*lightswitch.*/lightswitch ${VALUE}/" "${MOTION_CONF}"
-  sed -i "s/.*stream_auth_method.*/stream_auth_method 1/" "${MOTION_CONF}"
+  # set defaults for cameras
+  motion::configuration.update.edit 'auto_brightness' $(echo "${defaults:-null}" | jq -r '.auto_brightness')
+  motion::configuration.update.edit 'brightness' $(echo "${defaults:-null}" | jq -r '.brightness')
+  motion::configuration.update.edit 'contrast' $(echo "${defaults:-null}" | jq -r '.contrast')
+  motion::configuration.update.edit 'despeckle_filter' $(echo "${defaults:-null}" | jq -r '.despeckle_filter')
+  motion::configuration.update.edit 'event_gap' $(echo "${defaults:-null}" | jq -r '.event_gap')
+  motion::configuration.update.edit 'framerate' $(echo "${defaults:-null}" | jq -r '.framerate')
+  motion::configuration.update.edit 'height' $(echo "${defaults:-null}" | jq -r '.height')
+  motion::configuration.update.edit 'hue' $(echo "${defaults:-null}" | jq -r '.hue')
+  motion::configuration.update.edit 'lightswitch' $(echo "${defaults:-null}" | jq -r '.lightswitch')
+  motion::configuration.update.edit 'locate_motion_mode' $(echo "${defaults:-null}" | jq -r '.locate_motion_mode')
+  motion::configuration.update.edit 'locate_motion_style' $(echo "${defaults:-null}" | jq -r '.locate_motion_style')
+  motion::configuration.update.edit 'minimum_motion_frames' $(echo "${defaults:-null}" | jq -r '.minimum_motion_frames')
+  motion::configuration.update.edit 'movie_output' $(echo "${defaults:-null}" | jq -r '.movie_output')
+  motion::configuration.update.edit 'movie_output_motion' $(echo "${defaults:-null}" | jq -r '.movie_output_motion')
+  motion::configuration.update.edit 'netcam_keepalive' $(echo "${defaults:-null}" | jq -r '.netcam_keepalive')
+  motion::configuration.update.edit 'netcam_userpass' $(echo "${defaults:-null}" | jq -r '.netcam_userpass')
+  motion::configuration.update.edit 'picture_output' $(echo "${defaults:-null}" | jq -r '.picture_output')
+  motion::configuration.update.edit 'picture_quality' $(echo "${defaults:-null}" | jq -r '.picture_quality')
+  motion::configuration.update.edit 'picture_type' $(echo "${defaults:-null}" | jq -r '.picture_type')
+  motion::configuration.update.edit 'post_capture' $(echo "${defaults:-null}" | jq -r '.post_capture')
+  motion::configuration.update.edit 'pre_capture' $(echo "${defaults:-null}" | jq -r '.pre_capture')
+  motion::configuration.update.edit 'rotate' $(echo "${defaults:-null}" | jq -r '.rotate')
+  motion::configuration.update.edit 'saturation' $(echo "${defaults:-null}" | jq -r '.saturation')
+  motion::configuration.update.edit 'stream_quality' $(echo "${defaults:-null}" | jq -r '.stream_quality')
+  motion::configuration.update.edit 'text_changes' $(echo "${defaults:-null}" | jq -r '.text_changes')
+  motion::configuration.update.edit 'text_scale' $(echo "${defaults:-null}" | jq -r '.text_scale')
+  motion::configuration.update.edit 'threshold' $(echo "${defaults:-null}" | jq -r '.threshold')
+  motion::configuration.update.edit 'threshold_tune' $(echo "${defaults:-null}" | jq -r '.threshold_tune')
+  motion::configuration.update.edit 'v4l2_palette' $(echo "${defaults:-null}" | jq -r '.v4l2_palette')
+  motion::configuration.update.edit 'width' $(echo "${defaults:-null}" | jq -r '.width')
+}
 
-  sed -i "s/.*stream_authentication.*/stream_authentication ${USERNAME}:${PASSWORD}/" "${MOTION_CONF}"
-  sed -i "s/.*webcontrol_authentication.*/webcontrol_authentication ${USERNAME}:${PASSWORD}/" "${MOTION_CONF}"
-  sed -i "s/.*stream_localhost .*/stream_localhost off/" "${MOTION_CONF}"
-  sed -i "s/.*webcontrol_localhost .*/webcontrol_localhost off/" "${MOTION_CONF}"
+function motion::configuration.update.cameras()
+{
+  hzn::log.trace "${FUNCNAME[0]} ${*}"
 
-  sed -i "s/.*stream_localhost .*/stream_localhost on/" "${MOTION_CONF}"
-  sed -i "s/.*webcontrol_localhost .*/webcontrol_localhost on/" "${MOTION_CONF}"
-  
+  local ncamera=$(motion::configuration | jq '.cameras|length')
 
-  for (( i=0; i < ncamera; i++)); do
+  for (( i=0; i < ncamera; i++ )); do
     local camera=$(echo "${config}" | jq '.cameras['${i}']')
     local cnum
     local cname
@@ -462,6 +488,7 @@ function motion::configuration.update()
 
     local ctype=$(echo "${camera}" | jq -r '.type')
     local cconf=$(echo "${camera}" | jq -r '.conf')
+
     case ${ctype:-null} in
       mqtt|ftp)
 	hzn::log.debug "${FUNCNAME[0]}: virtual camera: skipping; camera ${i}:" $(echo "${camera}" | jq -c '.')
@@ -507,8 +534,29 @@ function motion::configuration.update()
     esac
 
     # add new camera configuration
-    echo "camera ${cconf}" >> "${MOTION_CONF}"
+    motion:configuration.update.camera ${cconf}
+
   done
+}
+
+function motion::configuration.update()
+{
+  hzn::log.trace "${FUNCNAME[0]} ${*}"
+
+  local config=$(motion::configuration)
+
+  cp -f ${MOTION_CONF%%.*}.default ${MOTION_CONF}
+
+  motion::configuration.update.edit 'log_level' $(echo "${config:-null}" | jq -r '.motion.log_level')
+  motion::configuration.update.edit 'log_type' $(echo "${config:-null}" | jq -r '.motion.log_type')
+  motion::configuration.update.edit 'log_file' $(echo "${config:-null}" | jq -r '.motion.log_file')
+  motion::configuration.update.edit 'target_dir' $(echo "${config:-null}" | jq -r '.motion.target_dir')
+
+  motion::configuration.update.authentication
+
+  motion::configuration.update.defaults
+
+  motion::configuration.update.cameras
 }
 
 ## MOTION
@@ -520,13 +568,13 @@ function motion::configure.motion()
   local MOTION='{}'
   
   # set log_type
-  VALUE=$(jq -r ".log_motion_type" "${CONFIG_PATH}")
+  VALUE=$(jq -r ".motion.log_type" "${CONFIG_PATH}")
   if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ]; then VALUE="ALL"; fi
   MOTION=$(echo "${MOTION}" | jq '.log_type="'${VALUE}'"')
   hzn::log.debug "${FUNCNAME[0]}: ${FUNCNAME[0]}: set motion_log_type to ${VALUE}"
   
   # set log_level
-  VALUE=$(jq -r ".log_motion_level" "${CONFIG_PATH}")
+  VALUE=$(jq -r ".motion.log_level" "${CONFIG_PATH}")
   case ${VALUE} in
     emergency)
       VALUE=1
@@ -557,14 +605,41 @@ function motion::configure.motion()
       ;;
   esac
   MOTION=$(echo "${MOTION}" | jq '.log_level='${VALUE})
-  hzn::log.debug "${FUNCNAME[0]}: set hzn::log_level to ${VALUE}"
+  hzn::log.debug "${FUNCNAME[0]}: set motion log_level to ${VALUE}"
   
   # set log_file
-  VALUE=$(jq -r ".log_file" "${CONFIG_PATH}")
+  VALUE=$(jq -r ".motion.log_file" "${CONFIG_PATH}")
   if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ]; then VALUE=${MOTION_DEFAULT_LOG_FILE:-/tmp/motion.log}; fi
   MOTION=$(echo "${MOTION}" | jq '.log_file="'${VALUE})'"'
-  hzn::log.debug "${FUNCNAME[0]}: set log_file to ${VALUE}"
+  hzn::log.debug "${FUNCNAME[0]}: set motion log_file to ${VALUE}"
   
+  # set webcontrol_port
+  VALUE=$(jq -r ".motion.webcontrol_port" "${CONFIG_PATH}")
+  if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ]; then VALUE=${MOTION_CONTROL_PORT}; fi
+  MOTION=$(echo "${MOTION}" | jq '.webcontrol_port='${VALUE})
+  hzn::log.debug "${FUNCNAME[0]}: set webcontrol_port to ${VALUE}"
+  
+  # set stream_port
+  VALUE=$(jq -r ".motion.stream_port" "${CONFIG_PATH}")
+  if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ]; then VALUE=${MOTION_STREAM_PORT}; fi
+  MOTION=$(echo "${MOTION}" | jq '.stream_port='${VALUE})
+  hzn::log.debug "${FUNCNAME[0]}: set stream_port to ${VALUE}"
+
+  ## ALL CAMERAS SHARE THE SAME USERNAME:PASSWORD CREDENTIALS
+  
+  # set username and password
+  USERNAME=$(jq -r ".motion.username" "${CONFIG_PATH}")
+  PASSWORD=$(jq -r ".motion.password" "${CONFIG_PATH}")
+  if [ "${USERNAME:-null}" != "null" ] && [ "${PASSWORD:-null}" != "null" ]; then
+    MOTION=$(echo "${MOTION}" | jq '.username="'${USERNAME}'"')
+    MOTION=$(echo "${MOTION}" | jq '.password="'${PASSWORD}'"')
+    MOTION=$(echo "${MOTION}" | jq '.stream_auth_method="Basic"')
+    hzn::log.debug "${FUNCNAME[0]}: set authentication to Basic for both stream and webcontrol"
+  else
+    MOTION=$(echo "${MOTION}" | jq '.stream_auth_method="localhost"')
+    hzn::log.warning "${FUNCNAME[0]}: no username and password; stream and webcontrol limited to localhost only"
+  fi
+
   # set auto_brightness
   VALUE=$(jq -r ".default.auto_brightness" "${CONFIG_PATH}")
   if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ]; then VALUE="on"; fi
@@ -583,10 +658,193 @@ function motion::configure.motion()
   MOTION=$(echo "${MOTION}" | jq '.locate_motion_style="'${VALUE}'"')
   hzn::log.debug "${FUNCNAME[0]}: set locate_motion_style to ${VALUE}"
 
+  
+  hzn::log.debug "${FUNCNAME[0]}:" $(echo "${MOTION}" | jq -c '.')
+  echo "${MOTION:-null}"
+}
+
+motion::configure.defaults()  
+{
+  hzn::log.trace "${FUNCNAME[0]} ${*}"
+
+  local defaults='{}'
+  local VALUE
+
+  # set netcam_keepalive (off,force,on)
+  VALUE=$(jq -r ".default.netcam_keepalive" "${CONFIG_PATH}")
+  if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ]; then VALUE="on"; fi
+  defaults=$(echo "${defaults}" | jq '.netcam_keepalive="'${VALUE}'"')
+  hzn::log.debug "${FUNCNAME[0]}: set netcam_keepalive to ${VALUE}"
+
+  # set netcam_userpass 
+  VALUE=$(jq -r ".default.netcam_userpass" "${CONFIG_PATH}")
+  if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ]; then VALUE=""; fi
+  defaults=$(echo "${defaults}" | jq '.netcam_userpass="'${VALUE}'"')
+  hzn::log.debug "${FUNCNAME[0]}: set netcam_userpass to ${VALUE}"
+  
+  # set v4l2_palette
+  VALUE=$(jq -r ".default.palette" "${CONFIG_PATH}")
+  if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ]; then VALUE=${defaults_DEFAULT_V4L2_PALETTE:-null}; fi
+  defaults=$(echo "${defaults}" | jq '.v4l2_palette='${VALUE})
+  hzn::log.debug "${FUNCNAME[0]}: set v4l2_palette to ${VALUE}"
+  
+  # set pre_capture
+  VALUE=$(jq -r ".default.pre_capture" "${CONFIG_PATH}")
+  if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ]; then VALUE=${defaults_DEFAULT_PRE_CAPURE:-0}; fi
+  defaults=$(echo "${defaults}" | jq '.pre_capture='${VALUE})
+  hzn::log.debug "${FUNCNAME[0]}: set pre_capture to ${VALUE}"
+  
+  # set post_capture
+  VALUE=$(jq -r ".default.post_capture" "${CONFIG_PATH}")
+  if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ]; then VALUE=${defaults_DEFAULT_POST_CAPTURE:-0}; fi
+  defaults=$(echo "${defaults}" | jq '.post_capture='${VALUE})
+  hzn::log.debug "${FUNCNAME[0]}: set post_capture to ${VALUE}"
+  
+  # set event_gap
+  VALUE=$(jq -r ".default.event_gap" "${CONFIG_PATH}")
+  if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ]; then VALUE=${defaults_DEFAULT_EVENT_GAP:-5}; fi
+  defaults=$(echo "${defaults}" | jq '.event_gap='${VALUE})
+  hzn::log.debug "${FUNCNAME[0]}: set event_gap to ${VALUE}"
+  
+  # set fov
+  VALUE=$(jq -r ".default.fov" "${CONFIG_PATH}")
+  if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ]; then VALUE=${defaults_DEFAULT_FOV:-60}; fi
+  defaults=$(echo "${defaults}" | jq '.fov='${VALUE})
+  hzn::log.debug "${FUNCNAME[0]}: set fov to ${VALUE}"
+  
+  # set minimum_motion_frames
+  VALUE=$(jq -r ".default.minimum_motion_frames" "${CONFIG_PATH}")
+  if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ]; then VALUE=${defaults_DEFAULT_MINIMUM_defaults_FRAMES:-5}; fi
+  defaults=$(echo "${defaults}" | jq '.minimum_motion_frames='${VALUE})
+  hzn::log.debug "${FUNCNAME[0]}: set minimum_motion_frames to ${VALUE}"
+  
+  # set picture_quality
+  VALUE=$(jq -r ".default.picture_quality" "${CONFIG_PATH}")
+  if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ]; then VALUE=${defaults_DEFAULT_PICTURE_QUALITY:-100}; fi
+  defaults=$(echo "${defaults}" | jq '.picture_quality='${VALUE})
+  hzn::log.debug "${FUNCNAME[0]}: set picture_quality to ${VALUE}"
+
+  # set stream_quality
+  VALUE=$(jq -r ".default.stream_quality" "${CONFIG_PATH}")
+  if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ]; then VALUE=${defaults_DEFAULT_STREAM_QUALITY:-100}; fi
+  defaults=$(echo "${defaults}" | jq '.stream_quality='${VALUE})
+  hzn::log.debug "${FUNCNAME[0]}: set stream_quality to ${VALUE}"
+
+  # set framerate
+  VALUE=$(jq -r ".default.framerate" "${CONFIG_PATH}")
+  if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ]; then VALUE=${defaults_DEFAULT_FRAMERATE:-5}; fi
+  defaults=$(echo "${defaults}" | jq '.framerate='${VALUE})
+  defaults="${defaults}"',"framerate":'"${VALUE}"
+  hzn::log.debug "${FUNCNAME[0]}: set framerate to ${VALUE}"
+  
+  # set text_changes
+  VALUE=$(jq -r ".default.text_changes" "${CONFIG_PATH}")
+  if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ]; then VALUE=${defaults_DEFAULT_TEXT_CHANGES:-off}; fi
+  defaults=$(echo "${defaults}" | jq '.text_changes="'${VALUE}'"')
+  hzn::log.debug "${FUNCNAME[0]}: set text_changes to ${VALUE}"
+  
+  # set text_scale
+  VALUE=$(jq -r ".default.text_scale" "${CONFIG_PATH}")
+  if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ]; then VALUE=${defaults_DEFAULT_TEXT_SCALE:-1}; fi
+  defaults=$(echo "${defaults}" | jq '.text_scale='${VALUE})
+  hzn::log.debug "${FUNCNAME[0]}: set text_scale to ${VALUE}"
+  
+  # set despeckle_filter
+  VALUE=$(jq -r ".default.despeckle_filter" "${CONFIG_PATH}")
+  if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ]; then VALUE=${defaults_DEFAULT_DESPECKLE_FILTER:-EedDl}; fi
+  defaults=$(echo "${defaults}" | jq '.despeckle_filter="'${VALUE}'"')
+  hzn::log.debug "${FUNCNAME[0]}: set despeckle_filter to ${VALUE}"
+  
+  # set brightness
+  VALUE=$(jq -r ".default.brightness" "${CONFIG_PATH}")
+  if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ]; then VALUE=${defaults_DEFAULT_BRIGHTNESS:-0}; fi
+  defaults=$(echo "${defaults}" | jq '.brightness='${VALUE})
+  hzn::log.debug "${FUNCNAME[0]}: set brightness to ${VALUE}"
+  
+  # set contrast
+  VALUE=$(jq -r ".default.contrast" "${CONFIG_PATH}")
+  if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ]; then VALUE=${defaults_DEFAULT_CONTRAST:-0}; fi
+  defaults=$(echo "${defaults}" | jq '.contrast='${VALUE})
+  hzn::log.debug "${FUNCNAME[0]}: set contrast to ${VALUE}"
+  
+  # set saturation
+  VALUE=$(jq -r ".default.saturation" "${CONFIG_PATH}")
+  if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ]; then VALUE=${defaults_DEFAULT_SATURATION:-0}; fi
+  defaults=$(echo "${defaults}" | jq '.saturation='${VALUE})
+  hzn::log.debug "${FUNCNAME[0]}: set saturation to ${VALUE}"
+  
+  # set hue
+  VALUE=$(jq -r ".default.hue" "${CONFIG_PATH}")
+  if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ]; then VALUE=${defaults_DEFAULT_HUE:-0}; fi
+  defaults=$(echo "${defaults}" | jq '.hue='${VALUE})
+  hzn::log.debug "${FUNCNAME[0]}: set hue to ${VALUE}"
+  
+  # set rotate
+  VALUE=$(jq -r ".default.rotate" "${CONFIG_PATH}")
+  if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ]; then VALUE=${defaults_DEFAULT_ROTATE:-0}; fi
+  defaults=$(echo "${defaults}" | jq '.rotate='${VALUE})
+  hzn::log.debug "${FUNCNAME[0]}: set rotate to ${VALUE}"
+  
+  # set width
+  VALUE=$(jq -r ".default.width" "${CONFIG_PATH}")
+  if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ]; then VALUE=${defaults_DEFAULT_WIDTH:-640}; fi
+  defaults=$(echo "${defaults}" | jq '.width='${VALUE})
+  hzn::log.debug "${FUNCNAME[0]}: set width to ${VALUE}"
+  
+  # set height
+  VALUE=$(jq -r ".default.height" "${CONFIG_PATH}")
+  if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ]; then VALUE=${defaults_DEFAULT_HEIGHT:-480}; fi
+  defaults=$(echo "${defaults}" | jq '.height='${VALUE})
+  hzn::log.debug "${FUNCNAME[0]}: set height to ${VALUE}"
+  
+  # set threshold_percent
+  VALUE=$(jq -r ".default.threshold_percent" "${CONFIG_PATH}")
+  if [ "${VALUE:-null}" = 'null' ] || [ ${VALUE:-0} == 0 ]; then 
+    VALUE=$(jq -r ".default.threshold" "${CONFIG_PATH}")
+    if [ "${VALUE:-null}" = 'null' ]; then 
+      VALUE=${defaults_DEFAULT_THRESHOLD_PERCENT:-10}
+      defaults=$(echo "${defaults}" | jq '.threshold_percent="'${VALUE}'"')
+      hzn::log.debug "DEFAULT threshold_percent to ${VALUE}"
+    fi
+  else
+    defaults=$(echo "${defaults}" | jq '.threshold_percent="'${VALUE}'"')
+    hzn::log.debug "${FUNCNAME[0]}: set threshold_percent to ${VALUE}"
+  fi
+
+  # set threshold
+  VALUE=$(jq -r ".default.threshold" "${CONFIG_PATH}")
+  if [ "${VALUE:-null}" = 'null' ]; then
+    local percent=$(echo "${defaults}" | jq -r '.threshold_percent');
+    local width=$(echo "${defaults}" | jq -r '.width');
+    local height=$(echo "${defaults}" | jq -r '.height');
+
+    VALUE=$((percent * width * height / 100))
+  fi
+  defaults=$(echo "${defaults}" | jq '.threshold='${VALUE})
+  hzn::log.debug "${FUNCNAME[0]}: set threshold to ${VALUE}"
+  
+  # set threshold_tune (on/off)
+  VALUE=$(jq -r ".default.threshold_tune" "${CONFIG_PATH}")
+  if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ]; then VALUE=${defaults_DEFAULT_THRESHOLD_TUNE:-on}; fi
+  defaults=$(echo "${defaults}" | jq '.threshold_tune="'${VALUE}'"')
+  hzn::log.debug "${FUNCNAME[0]}: set threshold_tune to ${VALUE}"
+  
+  # set lightswitch
+  VALUE=$(jq -r ".default.lightswitch" "${CONFIG_PATH}")
+  if [ "${VALUE:-null}" = 'null' ]; then VALUE=${defaults_DEFAULT_LIGHTSWITCH:-0}; fi
+  defaults=$(echo "${defaults}" | jq '.lightswitch='${VALUE})
+  hzn::log.debug "${FUNCNAME[0]}: set lightswitch to ${VALUE}"
+  
+  # set interval for events
+  VALUE=$(jq -r '.default.interval' "${CONFIG_PATH}")
+  if [ "${VALUE:-null}" = 'null' ]; then VALUE=${defaults_DEFAULT_INTERVAL:-3600}; fi
+  defaults=$(echo "${defaults}" | jq '.interval='${VALUE})
+  hzn::log.debug "${FUNCNAME[0]}: set interval to ${VALUE}"
+
   # set post_pictures; enumerated [on,center,first,last,best,most]
   VALUE=$(jq -r '.default.post_pictures' "${CONFIG_PATH}")
   if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ]; then VALUE="best"; fi
-  MOTION=$(echo "${MOTION}" | jq '.post_pictures="'${VALUE}'"')
+  defaults=$(echo "${defaults}" | jq '.post_pictures="'${VALUE}'"')
   hzn::log.debug "${FUNCNAME[0]}: set post_pictures to ${VALUE}"
   
   # set picture_output (on, off, first, best)
@@ -617,265 +875,63 @@ function motion::configure.motion()
     VALUE="${SPEC}"
     hzn::log.debug "picture_output; unspecified; using: ${VALUE}"
   fi
-  MOTION=$(echo "${MOTION}" | jq '.picture_output="'${VALUE}'"')
+  defaults=$(echo "${defaults}" | jq '.picture_output="'${VALUE}'"')
   hzn::log.info "${FUNCNAME[0]}: set picture_output to ${VALUE}"
   local PICTURE_OUTPUT=${VALUE}
 
   # set movie_output (on, off)
   if [ "${PICTURE_OUTPUT:-}" = 'best' ] || [ "${PICTURE_OUTPUT:-}" = 'first' ]; then
-    hzn::log.notice "Picture output: ${PICTURE_OUTPUT}; setting movie_output: on"
+    hzn::log.notice "${FUNCNAME[0]}: picture output: ${PICTURE_OUTPUT}; setting movie_output: on"
     VALUE='on'
   else
     VALUE=$(jq -r '.default.movie_output' "${CONFIG_PATH}")
     if [ "${VALUE:-null}" = 'null' ]; then 
-      hzn::log.debug "movie_output unspecified; defaulting: off"
+      hzn::log.debug "${FUNCNAME[0]}: movie_output unspecified; defaulting: off"
       VALUE="off"
     else
       case ${VALUE} in
         '3gp')
-          hzn::log.notice "movie_output: video type ${VALUE}; ensure camera type: ftpd"
-          MOTION_VIDEO_CODEC="${VALUE}"
+          hzn::log.notice "${FUNCNAME[0]}: movie_output: video type ${VALUE}; ensure camera type: ftpd"
+          defaults_VIDEO_CODEC="${VALUE}"
           VALUE='off'
         ;;
         'on'|'mp4')
-          hzn::log.debug "movie_output: supported codec: ${VALUE}; - MPEG-4 Part 14 H264 encoding"
-          MOTION_VIDEO_CODEC="${VALUE}"
+          hzn::log.debug "${FUNCNAME[0]}: movie_output: supported codec: ${VALUE}; - MPEG-4 Part 14 H264 encoding"
+          defaults_VIDEO_CODEC="${VALUE}"
           VALUE='on'
         ;;
         'mpeg4'|'swf'|'flv'|'ffv1'|'mov'|'mkv'|'hevc')
-          hzn::log.warning "movie_output: unsupported option: ${VALUE}"
-          MOTION_VIDEO_CODEC="${VALUE}"
+          hzn::log.warning "${FUNCNAME[0]}: movie_output: unsupported option: ${VALUE}"
+          defaults_VIDEO_CODEC="${VALUE}"
           VALUE='on'
         ;;
         'off')
-          hzn::log.debug "movie_output: off defined"
-          MOTION_VIDEO_CODEC=
+          hzn::log.debug "${FUNCNAME[0]}: movie_output: off defined"
+          defaults_VIDEO_CODEC=
           VALUE='off'
         ;;
         '*')
-          hzn::log.error "movie_output: unknown option for movie_output: ${VALUE}"
-          MOTION_VIDEO_CODEC=
+          hzn::log.error "${FUNCNAME[0]}: movie_output: unknown option for movie_output: ${VALUE}"
+          defaults_VIDEO_CODEC=
           VALUE='off'
         ;;
       esac
     fi
   fi
-  MOTION=$(echo "${MOTION}" | jq '.movie_output="'${VALUE}'"')
+  defaults=$(echo "${defaults}" | jq '.movie_output="'${VALUE}'"')
   hzn::log.info "${FUNCNAME[0]}: set movie_output to ${VALUE}"
-
-
   if [ "${VALUE:-null}" != 'null' ]; then
-    MOTION=$(echo "${MOTION}" | jq '.movie_output_motion="'${VALUE}'"')
+    defaults=$(echo "${defaults}" | jq '.movie_output_motion="'${VALUE}'"')
     hzn::log.info "${FUNCNAME[0]}: set movie_output_motion to ${VALUE}"
   fi
   
   # set picture_type (jpeg, ppm)
   VALUE=$(jq -r ".default.picture_type" "${CONFIG_PATH}")
   if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ]; then VALUE="jpeg"; fi
-  MOTION=$(echo "${MOTION}" | jq '.picture_type="'${VALUE}'"')
+  defaults=$(echo "${defaults}" | jq '.picture_type="'${VALUE}'"')
   hzn::log.debug "${FUNCNAME[0]}: set picture_type to ${VALUE}"
-  
-  # set netcam_keepalive (off,force,on)
-  VALUE=$(jq -r ".default.netcam_keepalive" "${CONFIG_PATH}")
-  if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ]; then VALUE="on"; fi
-  MOTION=$(echo "${MOTION}" | jq '.netcam_keepalive="'${VALUE}'"')
-  hzn::log.debug "${FUNCNAME[0]}: set netcam_keepalive to ${VALUE}"
 
-  # set netcam_userpass 
-  VALUE=$(jq -r ".default.netcam_userpass" "${CONFIG_PATH}")
-  if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ]; then VALUE=""; fi
-  MOTION=$(echo "${MOTION}" | jq '.netcam_userpass="'${VALUE}'"')
-  hzn::log.debug "${FUNCNAME[0]}: set netcam_userpass to ${VALUE}"
-  
-  # set v4l2_palette
-  VALUE=$(jq -r ".default.palette" "${CONFIG_PATH}")
-  if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ]; then VALUE=${MOTION_DEFAULT_V4L2_PALETTE:-null}; fi
-  MOTION=$(echo "${MOTION}" | jq '.palette='${VALUE})
-  hzn::log.debug "${FUNCNAME[0]}: set palette to ${VALUE}"
-  
-  # set pre_capture
-  VALUE=$(jq -r ".default.pre_capture" "${CONFIG_PATH}")
-  if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ]; then VALUE=${MOTION_DEFAULT_PRE_CAPURE:-0}; fi
-  MOTION=$(echo "${MOTION}" | jq '.pre_capture='${VALUE})
-  hzn::log.debug "${FUNCNAME[0]}: set pre_capture to ${VALUE}"
-  
-  # set post_capture
-  VALUE=$(jq -r ".default.post_capture" "${CONFIG_PATH}")
-  if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ]; then VALUE=${MOTION_DEFAULT_POST_CAPTURE:-0}; fi
-  MOTION=$(echo "${MOTION}" | jq '.post_capture='${VALUE})
-  hzn::log.debug "${FUNCNAME[0]}: set post_capture to ${VALUE}"
-  
-  # set event_gap
-  VALUE=$(jq -r ".default.event_gap" "${CONFIG_PATH}")
-  if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ]; then VALUE=${MOTION_DEFAULT_EVENT_GAP:-5}; fi
-  MOTION=$(echo "${MOTION}" | jq '.event_gap='${VALUE})
-  hzn::log.debug "${FUNCNAME[0]}: set event_gap to ${VALUE}"
-  
-  # set fov
-  VALUE=$(jq -r ".default.fov" "${CONFIG_PATH}")
-  if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ]; then VALUE=${MOTION_DEFAULT_FOV:-60}; fi
-  MOTION=$(echo "${MOTION}" | jq '.fov='${VALUE})
-  hzn::log.debug "${FUNCNAME[0]}: set fov to ${VALUE}"
-  
-  # set minimum_motion_frames
-  VALUE=$(jq -r ".default.minimum_motion_frames" "${CONFIG_PATH}")
-  if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ]; then VALUE=${MOTION_DEFAULT_MINIMUM_MOTION_FRAMES:-5}; fi
-  MOTION=$(echo "${MOTION}" | jq '.minimum_motion_frames='${VALUE})
-  hzn::log.debug "${FUNCNAME[0]}: set minimum_motion_frames to ${VALUE}"
-  
-  # set picture_quality
-  VALUE=$(jq -r ".default.picture_quality" "${CONFIG_PATH}")
-  if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ]; then VALUE=${MOTION_DEFAULT_PICTURE_QUALITY:-100}; fi
-  MOTION=$(echo "${MOTION}" | jq '.picture_quality='${VALUE})
-  hzn::log.debug "${FUNCNAME[0]}: set picture_quality to ${VALUE}"
-
-  # set stream_quality
-  VALUE=$(jq -r ".default.stream_quality" "${CONFIG_PATH}")
-  if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ]; then VALUE=${MOTION_DEFAULT_STREAM_QUALITY:-100}; fi
-  MOTION=$(echo "${MOTION}" | jq '.stream_quality='${VALUE})
-  hzn::log.debug "${FUNCNAME[0]}: set stream_quality to ${VALUE}"
-
-  # set framerate
-  VALUE=$(jq -r ".default.framerate" "${CONFIG_PATH}")
-  if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ]; then VALUE=${MOTION_DEFAULT_FRAMERATE:-5}; fi
-  MOTION=$(echo "${MOTION}" | jq '.framerate='${VALUE})
-  MOTION="${MOTION}"',"framerate":'"${VALUE}"
-  hzn::log.debug "${FUNCNAME[0]}: set framerate to ${VALUE}"
-  
-  # set text_changes
-  VALUE=$(jq -r ".default.text_changes" "${CONFIG_PATH}")
-  if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ]; then VALUE=${MOTION_DEFAULT_TEXT_CHANGES:-off}; fi
-  MOTION=$(echo "${MOTION}" | jq '.text_changes="'${VALUE}'"')
-  hzn::log.debug "${FUNCNAME[0]}: set text_changes to ${VALUE}"
-  
-  # set text_scale
-  VALUE=$(jq -r ".default.text_scale" "${CONFIG_PATH}")
-  if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ]; then VALUE=${MOTION_DEFAULT_TEXT_SCALE:-1}; fi
-  MOTION=$(echo "${MOTION}" | jq '.text_scale='${VALUE})
-  hzn::log.debug "${FUNCNAME[0]}: set text_scale to ${VALUE}"
-  
-  # set despeckle_filter
-  VALUE=$(jq -r ".default.despeckle_filter" "${CONFIG_PATH}")
-  if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ]; then VALUE=${MOTION_DEFAULT_DESPECKLE_FILTER:-EedDl}; fi
-  MOTION=$(echo "${MOTION}" | jq '.despeckle_filter="'${VALUE}'"')
-  hzn::log.debug "${FUNCNAME[0]}: set despeckle_filter to ${VALUE}"
-  
-
-  # set brightness
-  VALUE=$(jq -r ".default.brightness" "${CONFIG_PATH}")
-  if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ]; then VALUE=${MOTION_DEFAULT_BRIGHTNESS:-0}; fi
-  MOTION=$(echo "${MOTION}" | jq '.brightness='${VALUE})
-  hzn::log.debug "${FUNCNAME[0]}: set brightness to ${VALUE}"
-  
-  # set contrast
-  VALUE=$(jq -r ".default.contrast" "${CONFIG_PATH}")
-  if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ]; then VALUE=${MOTION_DEFAULT_CONTRAST:-0}; fi
-  MOTION=$(echo "${MOTION}" | jq '.contrast='${VALUE})
-  hzn::log.debug "${FUNCNAME[0]}: set contrast to ${VALUE}"
-  
-  # set saturation
-  VALUE=$(jq -r ".default.saturation" "${CONFIG_PATH}")
-  if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ]; then VALUE=${MOTION_DEFAULT_SATURATION:-0}; fi
-  MOTION=$(echo "${MOTION}" | jq '.saturation='${VALUE})
-  hzn::log.debug "${FUNCNAME[0]}: set saturation to ${VALUE}"
-  
-  # set hue
-  VALUE=$(jq -r ".default.hue" "${CONFIG_PATH}")
-  if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ]; then VALUE=${MOTION_DEFAULT_HUE:-0}; fi
-  MOTION=$(echo "${MOTION}" | jq '.hue='${VALUE})
-  hzn::log.debug "${FUNCNAME[0]}: set hue to ${VALUE}"
-  
-  # set rotate
-  VALUE=$(jq -r ".default.rotate" "${CONFIG_PATH}")
-  if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ]; then VALUE=${MOTION_DEFAULT_ROTATE:-0}; fi
-  MOTION=$(echo "${MOTION}" | jq '.rotate='${VALUE})
-  hzn::log.debug "${FUNCNAME[0]}: set rotate to ${VALUE}"
-  
-  # set webcontrol_port
-  VALUE=$(jq -r ".default.webcontrol_port" "${CONFIG_PATH}")
-  if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ]; then VALUE=${MOTION_CONTROL_PORT}; fi
-  MOTION=$(echo "${MOTION}" | jq '.webcontrol_port='${VALUE})
-  hzn::log.debug "${FUNCNAME[0]}: set webcontrol_port to ${VALUE}"
-  
-  # set stream_port
-  VALUE=$(jq -r ".default.stream_port" "${CONFIG_PATH}")
-  if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ]; then VALUE=${MOTION_STREAM_PORT}; fi
-  MOTION=$(echo "${MOTION}" | jq '.stream_port='${VALUE})
-  hzn::log.debug "${FUNCNAME[0]}: set stream_port to ${VALUE}"
-  
-  # set width
-  VALUE=$(jq -r ".default.width" "${CONFIG_PATH}")
-  if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ]; then VALUE=${MOTION_DEFAULT_WIDTH:-640}; fi
-  MOTION=$(echo "${MOTION}" | jq '.width='${VALUE})
-  hzn::log.debug "${FUNCNAME[0]}: set width to ${VALUE}"
-  
-  # set height
-  VALUE=$(jq -r ".default.height" "${CONFIG_PATH}")
-  if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ]; then VALUE=${MOTION_DEFAULT_HEIGHT:-480}; fi
-  MOTION=$(echo "${MOTION}" | jq '.height='${VALUE})
-  hzn::log.debug "${FUNCNAME[0]}: set height to ${VALUE}"
-  
-  # set threshold_tune (on/off)
-  VALUE=$(jq -r ".default.threshold_tune" "${CONFIG_PATH}")
-  if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ]; then VALUE=${MOTION_DEFAULT_THRESHOLD_TUNE:-on}; fi
-  MOTION=$(echo "${MOTION}" | jq '.threshold_tune="'${VALUE}'"')
-  hzn::log.debug "${FUNCNAME[0]}: set threshold_tune to ${VALUE}"
-  
-  # set threshold_percent
-  VALUE=$(jq -r ".default.threshold_percent" "${CONFIG_PATH}")
-  if [ "${VALUE:-null}" = 'null' ] || [ ${VALUE:-0} == 0 ]; then 
-    VALUE=$(jq -r ".default.threshold" "${CONFIG_PATH}")
-    if [ "${VALUE:-null}" = 'null' ]; then 
-      VALUE=${MOTION_DEFAULT_THRESHOLD_PERCENT:-10}
-      MOTION=$(echo "${MOTION}" | jq '.threshold_percent="'${VALUE}'"')
-      hzn::log.debug "DEFAULT threshold_percent to ${VALUE}"
-    fi
-  else
-    MOTION=$(echo "${MOTION}" | jq '.threshold_percent="'${VALUE}'"')
-    hzn::log.debug "${FUNCNAME[0]}: set threshold_percent to ${VALUE}"
-  fi
-
-  # set threshold
-  VALUE=$(jq -r ".default.threshold" "${CONFIG_PATH}")
-  if [ "${VALUE:-null}" = 'null' ]; then
-    local percent=$(echo "${MOTION}" | jq -r '.threshold_percent');
-    local width=$(echo "${MOTION}" | jq -r '.width');
-    local height=$(echo "${MOTION}" | jq -r '.height');
-
-    VALUE=$((percent * width * height / 100))
-  fi
-  MOTION=$(echo "${MOTION}" | jq '.threshold='${VALUE})
-  hzn::log.debug "${FUNCNAME[0]}: set threshold to ${VALUE}"
-  
-  # set lightswitch
-  VALUE=$(jq -r ".default.lightswitch" "${CONFIG_PATH}")
-  if [ "${VALUE:-null}" = 'null' ]; then VALUE=${MOTION_DEFAULT_LIGHTSWITCH:-0}; fi
-  MOTION=$(echo "${MOTION}" | jq '.lightswitch='${VALUE})
-  hzn::log.debug "${FUNCNAME[0]}: set lightswitch to ${VALUE}"
-  
-  # set interval for events
-  VALUE=$(jq -r '.default.interval' "${CONFIG_PATH}")
-  if [ "${VALUE:-null}" = 'null' ]; then VALUE=${MOTION_DEFAULT_INTERVAL:-3600}; fi
-  MOTION=$(echo "${MOTION}" | jq '.interval='${VALUE})
-  hzn::log.debug "${FUNCNAME[0]}: set interval to ${VALUE}"
-
-  ## ALL CAMERAS SHARE THE SAME USERNAME:PASSWORD CREDENTIALS
-  
-  # set username and password
-  USERNAME=$(jq -r ".default.username" "${CONFIG_PATH}")
-  PASSWORD=$(jq -r ".default.password" "${CONFIG_PATH}")
-  if [ "${USERNAME:-null}" != "null" ] && [ "${PASSWORD:-null}" != "null" ]; then
-    MOTION=$(echo "${MOTION}" | jq '.username="'${USERNAME}'"')
-    MOTION=$(echo "${MOTION}" | jq '.password="'${PASSWORD}'"')
-    MOTION=$(echo "${MOTION}" | jq '.stream_auth_method="Basic"')
-    hzn::log.debug "${FUNCNAME[0]}: set authentication to Basic for both stream and webcontrol"
-  else
-    MOTION=$(echo "${MOTION}" | jq '.stream_auth_method="localhost"')
-    hzn::log.debug "WARNING: no username and password; stream and webcontrol limited to localhost only"
-  fi
-  
-  hzn::log.debug "${FUNCNAME[0]}:" $(echo "${MOTION}" | jq -c '.')
-  echo "${MOTION:-null}"
+  echo "${defaults:-null}"
 }
 
 ## MQTT
@@ -914,7 +970,8 @@ function motion::configure.system()
 {
   hzn::log.trace "${FUNCNAME[0]}" "${*}"
 
-  local config='{"ipaddr":"'$(hostname -i)'","hostname":"'$(hostname)'","arch":"'$(arch)'","timestamp":"'$(date -u +%FT%TZ)'","date":'$(date -u +%s)'}'
+  local ipaddrs=$(ip addr | egrep -A2 'UP' | egrep 'inet ' | awk '{ print $2 }' | awk -F/ 'BEGIN { x=0; printf("["); } { if (x++>0) printf(",\"%s\"", $1); else printf("\"%s\"",$1) } END { printf("]"); }')
+  local config='{"ipaddrs":'${ipaddrs:-null}',"hostname":"'$(hostname)'","arch":"'$(arch)'","timestamp":"'$(date -u +%FT%TZ)'","date":'$(date -u +%s)'}'
   local timezone=$(bashio::config 'timezone')
   local result
 
@@ -936,8 +993,14 @@ function motion::configure()
   local VALUE=''
   local JSON=$(motion::configure.system)
 
+  # shared directory for results (not images and JSON)
+  VALUE=$(jq -r ".share_dir" "${CONFIG_PATH}")
+  if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ]; then VALUE=${MOTION_DEFAULT_SHARE_DIR:-/share/$(echo "${JSON}" | jq -r '.group')}; fi
+  JSON=$(echo "${JSON}" | jq -c '.share_dir="'${VALUE}'"')
+  hzn::log.debug "${FUNCNAME[0]}: set share_dir to ${VALUE}"
+
   # device group
-  VALUE=$(jq -r ".group" "${CONFIG_PATH}")
+  VALUE=$(jq -r ".motion.group" "${CONFIG_PATH}")
   if [ -z "${VALUE}" ] || [ "${VALUE}" = 'null' ]; then 
     VALUE="motion"
     hzn::log.warning "${FUNCNAME[0]}: group unspecifieid; setting group: ${VALUE}"
@@ -946,7 +1009,7 @@ function motion::configure()
   hzn::log.info "${FUNCNAME[0]}: MOTION_GROUP: ${VALUE}"
 
   # device name
-  VALUE=$(jq -r ".device" "${CONFIG_PATH}")
+  VALUE=$(jq -r ".motion.device" "${CONFIG_PATH}")
   if [ -z "${VALUE}" ] || [ "${VALUE}" = 'null' ]; then 
     VALUE="$(hostname -s)"
     hzn::log.warning "${FUNCNAME[0]}: device unspecifieid; setting device: ${VALUE}"
@@ -955,7 +1018,7 @@ function motion::configure()
   hzn::log.info "${FUNCNAME[0]}: MOTION_DEVICE: ${VALUE}"
 
   # client
-  VALUE=$(jq -r ".client" "${CONFIG_PATH}")
+  VALUE=$(jq -r ".motion.client" "${CONFIG_PATH}")
   if [ -z "${VALUE}" ] || [ "${VALUE}" = 'null' ]; then 
     VALUE="+"
     hzn::log.warning "${FUNCNAME[0]}: client unspecifieid; setting client: ${VALUE}"
@@ -963,14 +1026,8 @@ function motion::configure()
   JSON=$(echo "${JSON}" | jq -c '.client="'${VALUE}'"')
   hzn::log.info "${FUNCNAME[0]}: MOTION_CLIENT: ${VALUE}"
 
-  # shared directory for results (not images and JSON)
-  VALUE=$(jq -r ".share_dir" "${CONFIG_PATH}")
-  if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ]; then VALUE=${MOTION_DEFAULT_SHARE_DIR:-/share/$(echo "${JSON}" | jq -r '.group')}; fi
-  JSON=$(echo "${JSON}" | jq -c '.share_dir="'${VALUE}'"')
-  hzn::log.debug "${FUNCNAME[0]}: set share_dir to ${VALUE}"
-
   # base target_dir
-  VALUE=$(jq -r ".target_dir" "${CONFIG_PATH}")
+  VALUE=$(jq -r ".motion.target_dir" "${CONFIG_PATH}")
   if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ]; then VALUE="${MOTION_APACHE_HTDOCS}/cameras"; fi
   JSON=$(echo "${JSON}" | jq '.target_dir="'${VALUE})'"'
   hzn::log.debug "${FUNCNAME[0]}: set target_dir to ${VALUE}"
@@ -980,6 +1037,9 @@ function motion::configure()
   
   ## MOTION
   JSON=$(echo "${JSON}" | jq -c '.motion='$(motion::configure.motion ${JSON}))
+
+  ## CAMERA DEFAULTS
+  JSON=$(echo "${JSON}" | jq -c '.default='$(motion::configure.defaults ${JSON}))
   
   ## CAMERAS
   JSON=$(echo "${JSON}" | jq -c '.cameras='$(motion::configure.cameras ${JSON}))

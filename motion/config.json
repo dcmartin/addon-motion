@@ -45,8 +45,16 @@
   },
   "options": {
     "log_level": "info",
-    "log_motion_level": "info",
-    "log_motion_type": "ALL",
+    "timezone": "America/Los_Angeles",
+    "motion": {
+      "log_level": "info",
+      "log_type": "ALL",
+      "group": "motion",
+      "device": "device1",
+      "client": "+",
+      "username": "!secret motioncam-username",
+      "password": "!secret motioncam-password"
+    },
     "default": {
       "changes": "on",
       "event_gap": 30,
@@ -55,8 +63,6 @@
       "post_pictures": "best",
       "text_scale": 2,
       "threshold_percent": 2,
-      "username": "!secret motioncam-username",
-      "password": "!secret motioncam-password",
       "netcam_userpass": "!secret netcam-userpass",
       "width": 640,
       "height": 480
@@ -67,10 +73,6 @@
       "username": "!secret mqtt-username",
       "password": "!secret mqtt-password"
     },
-    "group": "motion",
-    "device": "testcam",
-    "client": "testcam",
-    "timezone": "America/Los_Angeles",
     "cameras": [
       {
         "name": "local",
@@ -107,17 +109,18 @@
   },
   "schema": {
     "log_level": "str",
-    "log_type": "str?",
-    "log_motion": "int?",
-    "log_motion_level": "list(emergency|alert|critical|error|warn|notice|info|debug|all)?",
-    "log_motion_type": "list(COR|STR|ENC|NET|DBL|EVT|TRK|VID|ALL)?",
-    "log_file": "str?",
-    "group": "str",
-    "device": "str?",
-    "client": "str?",
-    "username": "str?",
-    "password": "str?",
     "timezone": "str?",
+    "motion": {
+      "log_level": "list(emergency|alert|critical|error|warn|notice|info|debug|all)?",
+      "log_type": "list(COR|STR|ENC|NET|DBL|EVT|TRK|VID|ALL)?",
+      "log_file": "str?",
+      "target_dir": "str?",
+      "group": "str",
+      "device": "str?",
+      "client": "str?",
+      "username": "str?",
+      "password": "str?"
+    },
     "default": {
       "post_pictures": "list(first|last|best|most|center)",
       "picture_output": "list(off|on|first|best)?",
@@ -138,7 +141,6 @@
       "movie_quality": "int(1,100)?",
       "netcam_userpass": "str?",
       "palette": "int?",
-      "password": "str?",
       "picture_quality": "int?",
       "post_capture": "int?",
       "pre_capture": "int?",
@@ -147,8 +149,7 @@
       "text_scale": "int(1,10)?",
       "threshold": "int?",
       "threshold_percent": "int(0,100)?",
-      "type": "list(netcam|ftpd|mqtt)?",
-      "username": "str?",
+      "type": "list(local|netcam|ftpd|mqtt)?",
       "width": "int?"
     },
     "cameras": [

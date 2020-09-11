@@ -85,7 +85,7 @@ motion::configuration.group()
   local result=""
 
   if [ -s "${file}" ]; then
-    result=$(jq -r '.group' ${file})
+    result=$(jq -r '.motion.group' ${file})
   else
     hzn::log.warn "no configuration file"
   fi
@@ -100,7 +100,7 @@ motion::configuration.device()
   local result=""
 
   if [ -s "${file}" ]; then
-    result=$(jq -r '.device' ${file})
+    result=$(jq -r '.motion.device' ${file})
   else
     hzn::log.warn "no configuration file"
   fi
@@ -143,7 +143,7 @@ motion::configuration.post_pictures()
   local result=""
 
   if [ -s "${file}" ]; then
-    result=$(jq -r '.motion.post_pictures' ${file})
+    result=$(jq -r '.default.post_pictures' ${file})
   fi
   echo "${result:-}"
 }
@@ -224,12 +224,14 @@ motion::_mqtt.pub()
   local ARGS=${*}
   local code
   local err
+  local file=$(motion::configuration.file)
 
-  if [ ! -z "$(motion::configuration.file)" ] && [ -s $(motion::configuration.file) ]; then
-    local username=$(echo $(motion::configuration.mqtt) | jq -r '.username')
-    local port=$(echo $(motion::configuration.mqtt) | jq -r '.port')
-    local host=$(echo $(motion::configuration.mqtt) | jq -r '.host')
-    local password=$(echo $(motion::configuration.mqtt) | jq -r '.password')
+  if [ ! -z "${file:-}" ] && [ -s "${file}" ]; then
+    local mqtt=$(motion::configuration.mqtt)
+    local username=$(echo "${mqtt:-null}" | jq -r '.username')
+    local port=$(echo "${mqtt:-null}" | jq -r '.port')
+    local host=$(echo "${mqtt:-null}" | jq -r '.host')
+    local password=$(echo "${mqtt:-null}" | jq -r '.password')
 
     if [ ! -z "${ARGS}" ]; then
       if [ ! -z "${username}" ] && [ "${username}" != 'null' ]; then

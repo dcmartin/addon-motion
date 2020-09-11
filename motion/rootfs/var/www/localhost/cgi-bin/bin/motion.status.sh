@@ -2,14 +2,14 @@
 
 motion.restart()
 {
-  local ipaddr=$(ip addr | egrep -A2 'UP' | egrep 'inet ' | egrep -v 'inet 127' | egrep -v 'inet 172' | awk '{ print $2 }' | awk -F/ '{ print $1 }')
+  local ipaddrs=$(ip addr | egrep -A2 'UP' | egrep 'inet ' | awk '{ print $2 }' | awk -F/ 'BEGIN { x=0; printf("["); } { if (x++>0) printf(",\"%s\"", $1); else printf("\"%s\"",$1) } END { printf("]"); }')
   local camera=${1:-}
   local host=${2:-localhost}
   local port=${3:-8080}
 
   local cameras=($(motion.status ${host} ${port} | jq -r '.cameras[].camera'))
 
-  echo -n '{"ipaddr":"'${ipaddr:-}'","host":"'${host}'","port":'${port}',"cameras":['
+  echo -n '{"ipaddrs":'${ipaddrs:-null}',"host":"'${host}'","port":'${port}',"cameras":['
   if [ ${#cameras[@]} -gt 0 ]; then
     i=1; j=0
     for c in ${cameras[@]}; do
@@ -41,12 +41,12 @@ motion.restart()
 
 motion.status()
 {
-  local ipaddr=$(ip addr | egrep -A2 'UP' | egrep 'inet ' | egrep -v 'inet 127' | egrep -v 'inet 172' | awk '{ print $2 }' | awk -F/ '{ print $1 }')
+  local ipaddrs=$(ip addr | egrep -A2 'UP' | egrep 'inet ' | awk '{ print $2 }' | awk -F/ 'BEGIN { x=0; printf("["); } { if (x++>0) printf(",\"%s\"", $1); else printf("\"%s\"",$1) } END { printf("]"); }')
   local host=${1:-localhost}
   local port=${2:-8080}
   local cameras=($(curl --connect-timeout 10 -qsSL http://${host}:${port}/0/detection/status 2> /dev/null | awk '{ print $5 }'))
 
-  echo -n '{"ipaddr":"'${ipaddr:-}'","host":"'${host}'","port":'${port}',"cameras":['
+  echo -n '{"ipaddrs":'${ipaddrs:-null}',"host":"'${host}'","port":'${port}',"cameras":['
   if [ ${#cameras[@]} -gt 0 ]; then
     i=1
     for c in ${cameras[@]}; do
