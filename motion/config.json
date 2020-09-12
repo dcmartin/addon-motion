@@ -122,8 +122,6 @@
       "password": "str?"
     },
     "default": {
-      "post_pictures": "list(first|last|best|most|center)",
-      "picture_output": "list(off|on|first|best)?",
       "brightness": "int?",
       "changes": "list(on|off)?",
       "contrast": "int?",
@@ -141,13 +139,16 @@
       "movie_quality": "int(1,100)?",
       "netcam_userpass": "str?",
       "palette": "int?",
+      "picture_output": "list(off|on|first|best)?",
       "picture_quality": "int?",
       "post_capture": "int?",
+      "post_pictures": "list(first|last|best|most|center)",
       "pre_capture": "int?",
       "saturation": "int?",
       "stream_quality": "int?",
       "text_scale": "int(1,10)?",
       "threshold": "int?",
+      "threshold_tune": "bool?",
       "threshold_percent": "int(0,100)?",
       "type": "list(local|netcam|ftpd|mqtt)?",
       "width": "int?"
@@ -155,7 +156,6 @@
     "cameras": [
       {
         "name": "str",
-        "type": "list(local|netcam|ftpd|mqtt)?",
         "brightness": "int?",
         "changes": "list(on|off)?",
         "contrast": "int?",
@@ -167,8 +167,8 @@
         "height": "int?",
         "hue": "int?",
         "icon": "str?",
+	"left": "int?",
         "lightswitch": "int?",
-        "mac": "str?",
         "mjpeg_url": "str?",
         "movie_max": "int(1,60)?",
         "movie_output": "list(off|mp4|mpeg4|3gp)?",
@@ -176,7 +176,6 @@
         "netcam_url": "str?",
         "netcam_userpass": "str?",
         "palette": "int?",
-        "password": "str?",
         "picture_quality": "int?",
         "port": "port?",
         "rotate": "int?",
@@ -186,8 +185,9 @@
         "text_scale": "int(1,10)?",
         "threshold": "int?",
         "threshold_percent": "int(0,100)?",
-        "username": "str?",
-        "userpass": "str?",
+	"top": "int?",
+        "type": "list(local|netcam|ftpd|mqtt)?",
+	"w3w": "str?",
         "width": "int?"
       }
     ],
