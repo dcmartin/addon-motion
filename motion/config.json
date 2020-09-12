@@ -167,7 +167,7 @@
         "height": "int?",
         "hue": "int?",
         "icon": "str?",
-	"left": "int?",
+        "left": "int?",
         "lightswitch": "int?",
         "mjpeg_url": "str?",
         "movie_max": "int(1,60)?",
@@ -185,9 +185,9 @@
         "text_scale": "int(1,10)?",
         "threshold": "int?",
         "threshold_percent": "int(0,100)?",
-	"top": "int?",
+        "top": "int?",
         "type": "list(local|netcam|ftpd|mqtt)?",
-	"w3w": "str?",
+        "w3w": "str?",
         "width": "int?"
       }
     ],
