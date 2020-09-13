@@ -1141,6 +1141,17 @@ function motion::start()
 ### MAIN
 ###
 
+# hzn
+if [ -z "${SERVICE_LABEL}" ]; then 
+  SERVICE_LABEL=${T##*/} export SERVICE_LABEL=${SERVICE_LABEL%%.sh*}
+  hzn::log.warning "SERVICE_LABEL environment variable undefined; using ${SERVICE_LABEL}"
+fi
+
+if [ -z "${SERVICE_PORT}" ]; then 
+  export SERVICE_PORT='8082'
+  hzn::log.warning "SERVICE_PORT environment variable undefined; using ${SERVICE_PORT}"
+fi
+
 # defaults
 if [ -z "${MQTT_HOST:-}" ]; then export MQTT_HOST='mqtt'; fi
 if [ -z "${MQTT_PORT:-}" ]; then export MQTT_PORT=1883; fi
