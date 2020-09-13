@@ -1029,7 +1029,7 @@ function motion::configure()
   # base target_dir
   VALUE=$(jq -r ".motion.target_dir" "${CONFIG_PATH}")
   if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ]; then VALUE="${MOTION_APACHE_HTDOCS}/cameras"; fi
-  JSON=$(echo "${JSON}" | jq '.target_dir="'${VALUE})'"'
+  JSON=$(echo "${JSON}" | jq '.target_dir="'${VALUE}'"')
   hzn::log.debug "${FUNCNAME[0]}: set target_dir to ${VALUE}"
 
   ## MQTT
