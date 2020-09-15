@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [ "${USER:-null}" != 'root' ]; then
+if [ "${USER:-root}" != 'root' ]; then
   echo "Please run as root; sudo ${0} ${*}" &> /dev/stderr
   exit 1
 fi
