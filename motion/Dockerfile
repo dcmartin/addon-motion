@@ -35,7 +35,8 @@ RUN apk add --no-cache \
 
 RUN apk add --no-cache \
   ffmpeg \
-  motion@edge
+  motion@edge \
+  nmap@edge
 
 ## LIVE555
 RUN \
