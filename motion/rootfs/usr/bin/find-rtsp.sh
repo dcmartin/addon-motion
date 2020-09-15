@@ -51,7 +51,7 @@ if [ ${nip} -gt 0 ]; then
       record='{"ip":"'${ip}'","type":"rtsp","code":'${code:-null}'}'
     elif [ "${code:-}" != '000' ]; then
       echo -n '-' &> /dev/stderr
-      record='{"ip":"'${ip}'","code":"'${code:-null}'"}'
+      record='{"ip":"'${ip}'","code":'${code:-null}'}'
     else
       record=
       echo -n '.' &> /dev/stderr
