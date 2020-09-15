@@ -44,7 +44,7 @@
     "8090/tcp": "Camera interface"
   },
   "options": {
-    "log_level": "info",
+    "log_level": "debug",
     "timezone": "America/Los_Angeles",
     "motion": {
       "log_level": "info",

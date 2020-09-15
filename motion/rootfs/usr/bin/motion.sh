@@ -165,19 +165,13 @@ function motion::configure.camera()
   
   # framerate
   VALUE=$(echo "${c}" | jq -r '.framerate')
-  if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ] || [[ ${VALUE} < 1 ]]; then 
-    VALUE=$(jq -r '.framerate' "${CONFIG_PATH}")
-    if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ] || [[ ${VALUE} < 1 ]]; then VALUE=$(motion::configuration | jq -r '.default.framerate'); fi
-  fi
+  if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ] || [[ ${VALUE} < 1 ]]; then VALUE=$(motion::configuration | jq -r '.default.framerate'); fi
   CAMERA=$(echo "${CAMERA}" | jq '.framerate='${VALUE})
   hzn::log.debug "${FUNCNAME[0]}: set framerate to ${VALUE}"
   
   # event_gap
   VALUE=$(echo "${c}" | jq -r '.event_gap')
-  if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ] || [[ ${VALUE} < 1 ]]; then 
-    VALUE=$(jq -r '.event_gap' "${CONFIG_PATH}")
-    if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ] || [[ ${VALUE} < 1 ]]; then VALUE=$(motion::configuration | jq -r '.default.event_gap'); fi
-  fi
+  if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ] || [[ ${VALUE} < 1 ]]; then VALUE=$(motion::configuration | jq -r '.default.event_gap'); fi
   CAMERA=$(echo "${CAMERA}" | jq '.event_gap='${VALUE})
   hzn::log.debug "${FUNCNAME[0]}: set event_gap to ${VALUE}"
   
@@ -565,13 +559,13 @@ function motion::configure.motion()
   hzn::log.trace "${FUNCNAME[0]} ${*}"
   
   local JSON=${*}
-  local MOTION='{}'
+  local MOTION='null'
   
   # set log_type
   VALUE=$(jq -r ".motion.log_type" "${CONFIG_PATH}")
   if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ]; then VALUE="ALL"; fi
   MOTION=$(echo "${MOTION}" | jq '.log_type="'${VALUE}'"')
-  hzn::log.debug "${FUNCNAME[0]}: ${FUNCNAME[0]}: set motion_log_type to ${VALUE}"
+  hzn::log.debug "${FUNCNAME[0]}: ${FUNCNAME[0]}: set motion log_type to ${VALUE}"
   
   # set log_level
   VALUE=$(jq -r ".motion.log_level" "${CONFIG_PATH}")
@@ -610,7 +604,7 @@ function motion::configure.motion()
   # set log_file
   VALUE=$(jq -r ".motion.log_file" "${CONFIG_PATH}")
   if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ]; then VALUE=${MOTION_DEFAULT_LOG_FILE:-/tmp/motion.log}; fi
-  MOTION=$(echo "${MOTION}" | jq '.log_file="'${VALUE})'"'
+  MOTION=$(echo "${MOTION}" | jq '.log_file="'${VALUE}'"')
   hzn::log.debug "${FUNCNAME[0]}: set motion log_file to ${VALUE}"
   
   # set webcontrol_port
@@ -657,9 +651,7 @@ function motion::configure.motion()
   if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ]; then VALUE="box"; fi
   MOTION=$(echo "${MOTION}" | jq '.locate_motion_style="'${VALUE}'"')
   hzn::log.debug "${FUNCNAME[0]}: set locate_motion_style to ${VALUE}"
-
   
-  hzn::log.debug "${FUNCNAME[0]}:" $(echo "${MOTION}" | jq -c '.')
   echo "${MOTION:-null}"
 }
 
@@ -667,7 +659,7 @@ motion::configure.defaults()
 {
   hzn::log.trace "${FUNCNAME[0]} ${*}"
 
-  local defaults='{}'
+  local defaults='null'
   local VALUE
 
   # set netcam_keepalive (off,force,on)
@@ -1033,16 +1025,24 @@ function motion::configure()
   hzn::log.debug "${FUNCNAME[0]}: set target_dir to ${VALUE}"
 
   ## MQTT
-  JSON=$(echo "${JSON}" | jq -c '.mqtt='$(motion::configure.mqtt ${JSON}))
+  VALUE=$(motion::configure.mqtt ${JSON})
+  hzn::log.debug "${FUNCNAME[0]}: set mqtt to ${VALUE}"
+  JSON=$(echo "${JSON}" | jq -c '.mqtt='${VALUE})
   
   ## MOTION
-  JSON=$(echo "${JSON}" | jq -c '.motion='$(motion::configure.motion ${JSON}))
+  VALUE=$(motion::configure.motion ${JSON})
+  hzn::log.debug "${FUNCNAME[0]}: set motion to ${VALUE}"
+  JSON=$(echo "${JSON}" | jq -c '.motion='"${VALUE}")
 
   ## CAMERA DEFAULTS
-  JSON=$(echo "${JSON}" | jq -c '.default='$(motion::configure.defaults ${JSON}))
+  VALUE=$(motion::configure.defaults ${JSON})
+  hzn::log.debug "${FUNCNAME[0]}: set defaults to ${VALUE}"
+  JSON=$(echo "${JSON}" | jq -c '.default='"${VALUE}")
   
   ## CAMERAS
-  JSON=$(echo "${JSON}" | jq -c '.cameras='$(motion::configure.cameras ${JSON}))
+  VALUE=$(motion::configure.cameras ${JSON})
+  hzn::log.debug "${FUNCNAME[0]}: set cameras to ${VALUE}"
+  JSON=$(echo "${JSON}" | jq -c '.cameras='"${VALUE}")
   
   ### update configuration file
   echo "${JSON}" | jq -c '.' > "$(motion::configuration.file)" || hzn::log.error "${FUNCNAME[0]}: INVALID CONFIGURATION; metadata: ${JSON}"
