@@ -38,7 +38,7 @@ if [ ! -z "${1}" ]; then
     echo "$$" > "${pidfile}"
     if [ "${DEBUG:-}" = true ]; then echo "--- INFO -- $0 $$ -- initiating; pidfile: ${pidfile}; PID: " $(cat ${pidfile}) &> /dev/stderr; fi
     temp=$(mktemp -t "${0##*/}-XXXXXX")
-    echo '{"rtsp":'$(find-rtsp)'}' | tee ${temp} | jq -c '.'
+    echo '{"rtsp":'$(find_rtsp)'}' | tee ${temp} | jq -c '.'
     if [ "${DEBUG:-}" = true ]; then echo "--- INFO -- $0 $$ -- produced output; output: " $(cat ${temp}) &> /dev/stderr; fi
     mv -f ${temp} ${1}
     rm -f ${pidfile}
