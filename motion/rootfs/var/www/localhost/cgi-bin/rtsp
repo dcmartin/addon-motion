@@ -17,7 +17,7 @@ if [ ! -s "${OUTPUT}" ]; then
   pidfile="${TMPDIR}/${APP}.pid"
   if [ ! -s ${pidfile}  ]; then
     echo "--- INFO $0 $$ -- finding rtsp; output: ${OUTPUT}; pidfile: ${pidfile}" 2>&1 >> ${TMPDIR}/${APP}.log
-    ./bin/find-rtsp.sh "${OUTPUT}" ${pidfile} &
+    ./bin/mkrtsp.sh "${OUTPUT}" ${pidfile} &
     PID=$!
   else
     PID=$(cat ${pidfile})
