@@ -17,12 +17,18 @@ if [ ! -s "${OUTPUT}" ]; then
   pidfile="${TMPDIR}/${APP}.pid"
   if [ ! -s ${pidfile}  ]; then
     echo "--- INFO $0 $$ -- finding rtsp; output: ${OUTPUT}; pidfile: ${pidfile}" 2>&1 >> ${TMPDIR}/${APP}.log
+    touch ${OUTPUT}
     ./bin/rtsp.sh "${OUTPUT}" ${pidfile} &
     PID=$!
   else
     PID=$(cat ${pidfile})
+    if [ ! -z "${PID:-}" ]; then
+      echo "--- INFO $0 $$ -- still finding rtsp; PID: ${PID}" 2>&1 >> ${TMPDIR}/${APP}.log
+    else
+      echo "--- ERROR $0 $$ -- no PID" 2>&1 >> ${TMPDIR}/${APP}.log
+    fi
   fi
-  OUTPUTS=($(echo ${TMPDIR}/${APP}.*.json))
+  OUTPUTS=($(echo "${TMPDIR}/${APP}.*.json"))
 else
   echo "--- INFO $0 $$ -- using old outputs; output: ${OUTPUT}" 2>&1 >> ${TMPDIR}/${APP}.log
   OUTPUTS=(${OUTPUT})
@@ -51,16 +57,14 @@ else
 fi
 
 if [ ! -z "${RETRY:-}" ]; then
-#  echo 'HTTP/1.1 503 Service Unavailable'
-  echo "Retry-After: ${RETRY}"
+  echo "Retry-After: ${RETRY:-30}"
 else
-#  echo 'HTTP/1.1 200 OK'
-  echo "Cache-Control: max-age=${TTL}"
+  echo "Cache-Control: max-age=${TTL:-900}"
   echo "Age: ${AGE:-0}"
 fi
 
 ## output
-echo "Access-Control-Allow-Origin: *"
 echo "Content-Type: application/json; charset=utf-8"
+echo "Access-Control-Allow-Origin: *"
 echo ""
 echo "${OUTPUT}"
