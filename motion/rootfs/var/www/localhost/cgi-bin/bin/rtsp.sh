@@ -6,7 +6,7 @@ if [ -d "/tmpfs" ]; then TMPDIR="/tmpfs"; else TMPDIR="/tmp"; fi
 ### MAIN
 ###
 
-if [ -z "${1:-}" ] || [ ! -s "${1:-}" ] || [ -z "${2:-}" ]; then
+if [ -z "${1:-}" ] || [ ! -e "${1:-}" ] || [ -z "${2:-}" ]; then
   exit 1
 fi
 
