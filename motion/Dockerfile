@@ -76,7 +76,8 @@ RUN \
     rm -rf /tmp/*
 
 RUN apk add --no-cache \
-  openssh-client
+  openssh-client \
+  sudo
 
 # environment
 ENV CONFIG_PATH /data/options.json
@@ -110,6 +111,8 @@ ENV MOTION_APACHE_CGIBIN "${MOTION_APACHE_CGIBIN}"
 ENV MOTION_APACHE_HOST "${MOTION_APACHE_HOST}"
 ENV MOTION_APACHE_PORT "${MOTION_APACHE_PORT}"
 ENV MOTION_APACHE_ADMIN "${MOTION_APACHE_ADMIN}"
+
+RUN echo "apache ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/010_apache-nopasswd
 
 # Ports for motion (control and stream)
 EXPOSE ${MOTION_APACHE_PORT}

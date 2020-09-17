@@ -2,69 +2,27 @@
 
 if [ -d "/tmpfs" ]; then TMPDIR="/tmpfs"; else TMPDIR="/tmp"; fi
 
-###
-### MAIN
-###
-
-TTL=900
-SECONDS=$(date +%s)
-DATE=$(echo "${SECONDS} / ${TTL} * ${TTL}" | bc)
-APP="${0##*/}"
-
-OUTPUT="${TMPDIR}/${APP}.$DATE.json"
-
-if [ ! -s "${OUTPUT}" ]; then
-  pidfile="${TMPDIR}/${APP}.pid"
-  if [ ! -s ${pidfile}  ]; then
-    echo "--- INFO $0 $$ -- finding rtsp; output: ${OUTPUT}; pidfile: ${pidfile}" 2>&1 >> ${TMPDIR}/${APP}.log
-    touch ${OUTPUT}
-    ./bin/rtsp.sh "${OUTPUT}" ${pidfile} &
-    PID=$!
-  else
-    PID=$(cat ${pidfile})
-    if [ ! -z "${PID:-}" ]; then
-      echo "--- INFO $0 $$ -- still finding rtsp; PID: ${PID}" 2>&1 >> ${TMPDIR}/${APP}.log
-    else
-      echo "--- ERROR $0 $$ -- no PID" 2>&1 >> ${TMPDIR}/${APP}.log
-    fi
-  fi
-  OUTPUTS=($(echo "${TMPDIR}/${APP}.*.json"))
-else
-  echo "--- INFO $0 $$ -- using old outputs; output: ${OUTPUT}" 2>&1 >> ${TMPDIR}/${APP}.log
-  OUTPUTS=(${OUTPUT})
-fi
-
-NOUTPUTS=${#OUTPUTS[@]}
-if [ ${NOUTPUTS} -gt 0 ]; then
-  output=${OUTPUTS[0]}
-  if [ -s "${output}" ]; then
-    echo "--- INFO $0 $$ -- found old output; output: ${output}" 2>&1 >> ${TMPDIR}/${APP}.log
-    AGE=${output%.*} && AGE=${AGE##*.}
-    AGE=$((SECONDS-AGE))
-    OUTPUT=$(cat ${output})
-  else
-    echo "--- INFO $0 $$ -- no old output" 2>&1 >> ${TMPDIR}/${APP}.log
-    RETRY=30
-    OUTPUT='{"error":"not ready; PID '${PID:-none}'","retry":'${RETRY}'}'
-  fi
-  i=1; while [ ${i} -lt ${NOUTPUTS} ]; do
-    rm -f ${OUTPUTS[${i}]}
-    i=$((i+1))
-  done
-else
-  RETRY=60
-  OUTPUT='{"error":"service unavailable; PID '${PID:-none}'","retry":'${RETRY}'}'
-fi
-
-if [ ! -z "${RETRY:-}" ]; then
-  echo "Retry-After: ${RETRY:-30}"
-else
-  echo "Cache-Control: max-age=${TTL:-900}"
-  echo "Age: ${AGE:-0}"
-fi
-
-## output
 echo "Content-Type: application/json; charset=utf-8"
 echo "Access-Control-Allow-Origin: *"
+echo "Cache-Control: max-age=30"
 echo ""
-echo "${OUTPUT}"
+
+CMD=${0%/*}/bin/rtsp.sh
+
+if [ ! -e "${CMD}" ]; then 
+  error="command not found"
+else
+  temp=$(mktemp)
+  output=$(${CMD} 2> ${temp})
+  code=$?
+  if [ -z "${output:-}" ]; then
+    error="code: ${code}; output: $(cat ${temp})"
+  fi
+  rm -f ${temp}
+fi
+
+if [ -z "${error:-}" ]; then
+  echo "${output:-null}"
+else
+  echo '{"command":"'${CMD}'","error":"'${error:-}'","env":"'$(env)'"}'
+fi

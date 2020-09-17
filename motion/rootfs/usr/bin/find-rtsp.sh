@@ -45,13 +45,16 @@ nip=${#ipset[@]}
 if [ ${nip} -gt 0 ]; then
   echo -n "Total devices: ${nip} " &> /dev/stderr
   for ip in ${ips}; do
+    DATE=$(date +"%s.%6N")
     code=$(curl --connect-timeout ${CURL_CONNECT_TIME} --max-time ${CURL_MAX_TIME} -sSL -w '%{http_code}' "rtsp://${ip}/" 2> /dev/null)
+    TIME=$(date +"%s.%6N")
+    TIME=$(echo "${TIME} - ${DATE}" | bc -l)
     if [ "${code:-null}" = '200' ]; then
       echo -n '+' &> /dev/stderr
-      record='{"ip":"'${ip}'","type":"rtsp","code":'${code:-null}'}'
+      record='{"ip":"'${ip}'","rtsp":true,"connect":'${TIME}',"code":'${code:-null}'}'
     elif [ "${code:-}" != '000' ]; then
       echo -n '-' &> /dev/stderr
-      record='{"ip":"'${ip}'","code":'${code:-null}'}'
+      record='{"ip":"'${ip}'","rtsp":false,"connect":'${TIME}',"timeout":'${CURL_CONNECT_TIME}',"maxtime":'${CURL_MAX_TIME}',"code":'${code:-null}'}'
     else
       record=
       echo -n '.' &> /dev/stderr
