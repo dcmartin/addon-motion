@@ -19,9 +19,7 @@ myip()
 
 find_rtsp()
 {
-  if [ "${DEBUG:-false}" = 'true' ]; then echo "${FUNCNAME[0]} ${*}" &> /dev/stderr; fi
-
-  local result=$(find-rtsp.sh $(myip) 2> /dev/null)
+  local result=$(sudo find-rtsp.sh $(myip) 2> /dev/null)
 
   echo ${result:-null}
 }
@@ -30,14 +28,23 @@ find_rtsp()
 ### MAIN
 ###
 
-if [ -z "${1:-}" ] || [ ! -e "${1:-}" ]; then
-  echo "*** ERROR -- $0 $$ -- provide fullpath for output file" &>  /dev/stderr
+if [ -z "${1:-}" ] || [ -z "${2:-}" ]; then
+  echo "*** ERROR -- $0 $$ -- provide fullpath for output file and pidfile" &>  /dev/stderr
   exit 1
 fi
 
 output=${1:-}
-
+pidfile=${2:-}
 temp=$(mktemp)
+
+echo $$ > ${pidfile}
+
+exec 0>&- # close stdin
+exec 1>&- # close stdout
+exec 2>&- # close stderr
+
+# doit
 echo '{"rtsp":'$(find_rtsp)'}' | jq -c '.' > ${temp}
+
 mv -f ${temp} ${output}
-if [ "${DEBUG:-}" = true ]; then echo "--- INFO -- $0 $$ -- output:" $(cat ${output}) &> ${LOG}; fi
+rm -f ${pidfile}

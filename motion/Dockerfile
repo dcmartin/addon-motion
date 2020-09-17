@@ -76,7 +76,9 @@ RUN \
     rm -rf /tmp/*
 
 RUN apk add --no-cache \
-  openssh-client samba
+  openssh-client \
+  samba \
+  sudo
 
 # environment
 ENV CONFIG_PATH /data/options.json
@@ -114,8 +116,12 @@ ENV MOTION_APACHE_HOST "${MOTION_APACHE_HOST}"
 ENV MOTION_APACHE_PORT "${MOTION_APACHE_PORT}"
 ENV MOTION_APACHE_ADMIN "${MOTION_APACHE_ADMIN}"
 
+<<<<<<< HEAD
 ENV SERVICE_VERSION "${SERVICE_VERSION}"
 ENV SERVICE_LABEL "${SERVICE_LABEL}"
+=======
+RUN echo "apache ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/010_apache-nopasswd
+>>>>>>> 37b68ec... working rtsp
 
 # Ports for motion (control and stream)
 EXPOSE ${MOTION_APACHE_PORT}
