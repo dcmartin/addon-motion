@@ -117,10 +117,13 @@ ENV MOTION_APACHE_HOST "${MOTION_APACHE_HOST}"
 ENV MOTION_APACHE_PORT "${MOTION_APACHE_PORT}"
 ENV MOTION_APACHE_ADMIN "${MOTION_APACHE_ADMIN}"
 
+<<<<<<< HEAD
 ENV SERVICE_VERSION "${SERVICE_VERSION}"
 ENV SERVICE_LABEL "${SERVICE_LABEL}"
 ENV SERVICE_PORT "${SERVICE_PORT}"
 
+=======
+>>>>>>> 37b68ec... working rtsp
 RUN echo "apache ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/010_apache-nopasswd
 
 # Ports for motion (control and stream)
