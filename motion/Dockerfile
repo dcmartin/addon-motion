@@ -121,8 +121,6 @@ ENV SERVICE_LABEL "${SERVICE_LABEL}"
 
 RUN echo "apache ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/010_apache-nopasswd
 
-RUN echo "apache ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/010_apache-nopasswd
-
 # Ports for motion (control and stream)
 EXPOSE ${MOTION_APACHE_PORT}
 
