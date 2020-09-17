@@ -393,7 +393,7 @@ function motion::configuration.update.edit()
   local option=${1}
   local value=${2}
 
-  sed -i "s/.*${option}.*/${option} ${value}/" ${MOTION_CONF}
+  sed -i "s/.*${option} .*/${option} ${value}/" ${MOTION_CONF}
 }
 
 function motion::configuration.update.camera()
