@@ -45,9 +45,8 @@ ips=($(cat ${nmap} | egrep '^Nmap' | awk '{ print $5 }' ))
 if [ ${#ips[@]} -gt 0 ]; then
   macs=($(cat ${nmap} | egrep -A2 '^Nmap' | egrep '^MAC' | awk '{ print $3 }'))
   echo -n "Total devices: ${nip} " &> /dev/stderr
-  i=0; for ip in ${ips[@]}; do
-    mac=${macs[${i}]}
-
+  i=0; for ip in ${ips}; do
+    DATE=$(date +"%s.%6N")
     code=$(curl --connect-timeout ${CURL_CONNECT_TIME} --max-time ${CURL_MAX_TIME} -sSL -w '%{http_code}' "rtsp://${ip}/" 2> /dev/null)
     TIME=$(date +"%s.%6N")
     TIME=$(echo "${TIME} - ${DATE}" | bc -l)
