@@ -130,6 +130,8 @@ function motion::configure.cameras()
 
 motion::configuration.update.cameras()
 {
+  hzn::log.trace "${FUNCNAME[0]} ${*}"
+
   ## CONFIGURE REAL CAMERA
   if (( CNUM / 10 )); then
       if (( CNUM % 10 == 0 )); then
@@ -726,7 +728,6 @@ motion::configure.defaults()
   VALUE=$(jq -r ".default.framerate" "${CONFIG_PATH}")
   if [ "${VALUE}" = 'null' ] || [ -z "${VALUE}" ]; then VALUE=${defaults_DEFAULT_FRAMERATE:-5}; fi
   defaults=$(echo "${defaults}" | jq '.framerate='${VALUE})
-  defaults="${defaults}"',"framerate":'"${VALUE}"
   hzn::log.debug "${FUNCNAME[0]}: set framerate to ${VALUE}"
   
   # set text_changes

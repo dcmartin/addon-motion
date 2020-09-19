@@ -47,7 +47,7 @@
     "log_level": "debug",
     "timezone": "America/Los_Angeles",
     "motion": {
-      "log_level": "info",
+      "log_level": "debug",
       "log_type": "ALL",
       "group": "motion",
       "device": "device1",
