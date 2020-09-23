@@ -1,6 +1,6 @@
 # &#127916; - `motion` _add-on_
 
-This [Home Assistant](http://home-assistant.io) add-on utilizes the [motion project](https://motion-project.github.io/), [YOLO](https://pjreddie.com/darknet/yolo/), and other AI's to detect and classify entity(s) in images.  The _motion project_ software provides an extensive set of capabilities to capture video feeds from a variety of sources, including `RSTP`,`HTTP`, and `MJPEG` network cameras.  Locally attached USB camera requires specialized version; see [`motion-video0`](http://github.com/dcmartin/hassio-addons/tree/master/motion-video0/README.md).
+This [Home Assistant](http://home-assistant.io) add-on utilizes the [motion project](https://motion-project.github.io/), [YOLO](https://pjreddie.com/darknet/yolo/), and other AI's to detect and classify entity(s) in images.  The _motion project_ software provides an extensive set of capabilities to capture video feeds from a variety of sources, including `RSTP`,`HTTP`, and `MJPEG` network cameras.  Locally attached USB camera on `/dev/video0` is also supported.
 
 This add-on interacts with additional components and services:
 
@@ -15,13 +15,13 @@ In addition, there are three AI services which may be used to identify entities,
 1. [`alpr4motion`](http://github.com/dcmartin/open-horizon/tree/master/alpr4motion/README.md)  An [Open Horizon](http://github.com/dcmartin/open-horizon) service; use [`sh/alpr4motion.sh`](http://github.com/dcmartin/motion/tree/master/sh/alpr4motion.sh) in [`motion`](http://github.com/dcmartin/motion) 
 
 ### Containers
-This _addon_ is built for the following architectures and available in Docker Hub, e.g. [`amd64`](https://hub.docker.com/repository/docker/dcmartin/amd64-addon-motion) version.
+This _addon_ is built for the following architectures and available in Docker Hub, e.g. [`amd64`](https://hub.docker.com/repository/docker/dcmartin/amd64-addon-motion-video0) version.
 
-![](https://img.shields.io/badge/amd64-yes-green.svg)[![](https://images.microbadger.com/badges/image/dcmartin/amd64-addon-motion.svg)](https://microbadger.com/images/dcmartin/amd64-addon-motion)[![](https://images.microbadger.com/badges/version/dcmartin/amd64-addon-motion.svg)](https://microbadger.com/images/dcmartin/amd64-addon-motion)[![](https://img.shields.io/docker/pulls/dcmartin/amd64-addon-motion.svg)](https://hub.docker.com/r/dcmartin/amd64-addon-motion)
+![](https://img.shields.io/badge/amd64-yes-green.svg)[![](https://images.microbadger.com/badges/image/dcmartin/amd64-addon-motion-video0.svg)](https://microbadger.com/images/dcmartin/amd64-addon-motion-video0)[![](https://images.microbadger.com/badges/version/dcmartin/amd64-addon-motion-video0.svg)](https://microbadger.com/images/dcmartin/amd64-addon-motion-video0)[![](https://img.shields.io/docker/pulls/dcmartin/amd64-addon-motion-video0.svg)](https://hub.docker.com/r/dcmartin/amd64-addon-motion-video0)
 
-![](https://img.shields.io/badge/aarch64-yes-green.svg)[![](https://images.microbadger.com/badges/image/dcmartin/aarch64-addon-motion.svg)](https://microbadger.com/images/dcmartin/aarch64-addon-motion)[![](https://images.microbadger.com/badges/version/dcmartin/aarch64-addon-motion.svg)](https://microbadger.com/images/dcmartin/aarch64-addon-motion)[![](https://img.shields.io/docker/pulls/dcmartin/aarch64-addon-motion.svg)](https://hub.docker.com/r/dcmartin/aarch64-addon-motion)
+![](https://img.shields.io/badge/aarch64-yes-green.svg)[![](https://images.microbadger.com/badges/image/dcmartin/aarch64-addon-motion-video0.svg)](https://microbadger.com/images/dcmartin/aarch64-addon-motion-video0)[![](https://images.microbadger.com/badges/version/dcmartin/aarch64-addon-motion-video0.svg)](https://microbadger.com/images/dcmartin/aarch64-addon-motion-video0)[![](https://img.shields.io/docker/pulls/dcmartin/aarch64-addon-motion-video0.svg)](https://hub.docker.com/r/dcmartin/aarch64-addon-motion-video0)
 
-![](https://img.shields.io/badge/armv7-yes-green.svg)[![](https://images.microbadger.com/badges/image/dcmartin/armv7-addon-motion.svg)](https://microbadger.com/images/dcmartin/armv7-addon-motion)[![](https://images.microbadger.com/badges/version/dcmartin/armv7-addon-motion.svg)](https://microbadger.com/images/dcmartin/armv7-addon-motion)[![](https://img.shields.io/docker/pulls/dcmartin/armv7-addon-motion.svg)](https://hub.docker.com/r/dcmartin/armv7-addon-motion)
+![](https://img.shields.io/badge/armv7-yes-green.svg)[![](https://images.microbadger.com/badges/image/dcmartin/armv7-addon-motion-video0.svg)](https://microbadger.com/images/dcmartin/armv7-addon-motion-video0)[![](https://images.microbadger.com/badges/version/dcmartin/armv7-addon-motion-video0.svg)](https://microbadger.com/images/dcmartin/armv7-addon-motion-video0)[![](https://img.shields.io/docker/pulls/dcmartin/armv7-addon-motion-video0.svg)](https://hub.docker.com/r/dcmartin/armv7-addon-motion-video0)
 
 ## `motion-ai`
 The [`motion-ai`](http://github.com/dcmartin/motion-ai) repository provides automated mechanisms to download, install, and configure [Home Assistant](http://home-assistant.io).   The [`webcams.json`](http://github.com/dcmartin/motion/tree/master/motion/webcams.json.tmpl) file defines cameras known to the system; file contents of `[]` indicate none and only discovered will appear.  After modifying and/or creating this file, Home Assistant should be reconfigured.  Run `make restart` in the top-level **HA** directory --  typically `/usr/share/hassio` when using the `motion-ai`installation [instructions](http://github.com/dcmartin/motion-ai/tree/master/docs/INSTALL.md).
@@ -83,7 +83,7 @@ All topics begin with the `devicedb` specified, which defaults to "motion".
 
 ## Sample output
 
-[![motion sample](docs/samples/motion-sample.png?raw=true "SAMPLE")](docs/samples/motion-sample.png)
+[![motion sample](http://github.com/dcmartin/addon=motion/docs/samples/motion-sample.png?raw=true "SAMPLE")](http://github.com/dcmartin/addon=motion/docs/samples/motion-sample.png?raw=true)
 
 # Additional information
 The Motion package has extensive [documentation][motiondoc] on available parameters.  Almost all parameters are avsailable.
