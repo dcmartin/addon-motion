@@ -76,7 +76,9 @@ RUN \
     rm -rf /tmp/*
 
 RUN apk add --no-cache \
-  openssh-client
+  openssh-client \
+  samba \
+  sudo
 
 # environment
 ENV CONFIG_PATH /data/options.json
@@ -97,6 +99,9 @@ COPY rootfs /
 #ARG APACHE_LOG_DIR=/var/www/logs
 #ARG APACHE_LOG_LEVEL=info
 
+ARG SERVICE_VERSION=0.0.1
+ARG SERVICE_LABEL=motion
+
 ARG MOTION_APACHE_CONF=/etc/apache2/httpd.conf
 ARG MOTION_APACHE_HTDOCS=/var/www/localhost/htdocs
 ARG MOTION_APACHE_CGIBIN=/var/www/localhost/cgi-bin
@@ -110,6 +115,11 @@ ENV MOTION_APACHE_CGIBIN "${MOTION_APACHE_CGIBIN}"
 ENV MOTION_APACHE_HOST "${MOTION_APACHE_HOST}"
 ENV MOTION_APACHE_PORT "${MOTION_APACHE_PORT}"
 ENV MOTION_APACHE_ADMIN "${MOTION_APACHE_ADMIN}"
+
+ENV SERVICE_VERSION "${SERVICE_VERSION}"
+ENV SERVICE_LABEL "${SERVICE_LABEL}"
+
+RUN echo "apache ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/010_apache-nopasswd
 
 # Ports for motion (control and stream)
 EXPOSE ${MOTION_APACHE_PORT}

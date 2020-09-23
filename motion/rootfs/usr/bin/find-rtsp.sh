@@ -38,20 +38,24 @@ fi
 
 echo "Searching ${wnet} for devices.." &> /dev/stderr
 
-ips=$(nmap -sn -T4 ${wnet} | egrep -v ${wlan:-null} | egrep '^Nmap scan' | awk '{ print $5 }' )
-ipset=(${ips})
-nip=${#ipset[@]}
+nmap=$(mktemp)
+nmap -sn -T4 ${wnet} | egrep -v ${wlan:-null} > ${nmap}
+ips=($(cat ${nmap} | egrep '^Nmap' | awk '{ print $5 }' ))
 
-if [ ${nip} -gt 0 ]; then
+if [ ${#ips[@]} -gt 0 ]; then
+  macs=($(cat ${nmap} | egrep -A2 '^Nmap' | egrep '^MAC' | awk '{ print $3 }'))
   echo -n "Total devices: ${nip} " &> /dev/stderr
-  for ip in ${ips}; do
+  i=0; for ip in ${ips}; do
+    DATE=$(date +"%s.%6N")
     code=$(curl --connect-timeout ${CURL_CONNECT_TIME} --max-time ${CURL_MAX_TIME} -sSL -w '%{http_code}' "rtsp://${ip}/" 2> /dev/null)
+    TIME=$(date +"%s.%6N")
+    TIME=$(echo "${TIME} - ${DATE}" | bc -l)
     if [ "${code:-null}" = '200' ]; then
       echo -n '+' &> /dev/stderr
-      record='{"ip":"'${ip}'","type":"rtsp","code":'${code:-null}'}'
+      record='{"ip":"'${ip}'","rtsp":true,"connect":'${TIME}',"code":'${code:-null}'}'
     elif [ "${code:-}" != '000' ]; then
       echo -n '-' &> /dev/stderr
-      record='{"ip":"'${ip}'","code":"'${code:-null}'"}'
+      record='{"ip":"'${ip}'","rtsp":false,"connect":'${TIME}',"timeout":'${CURL_CONNECT_TIME}',"maxtime":'${CURL_MAX_TIME}',"code":'${code:-null}'}'
     else
       record=
       echo -n '.' &> /dev/stderr
@@ -59,11 +63,14 @@ if [ ${nip} -gt 0 ]; then
     if [ "${record:-null}" != 'null' ]; then
       if [ "${output:-null}" = 'null' ]; then output='['"${record}"; else output="${output},${record}"; fi
     fi
+    i=$((i+1))
   done
   if [ "${output:-null}" != 'null' ]; then output="${output}"']'; fi
   echo " done" &> /dev/stderr
 else
   echo "No devices" &> /dev/stderr
 fi
+
+rm -f ${nmap}
 
 echo "${output:-null}"

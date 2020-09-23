@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/with-contenv bashio
 
 source ${USRBIN:-/usr/bin}/motion-tools.sh
 
@@ -20,7 +20,7 @@ source ${USRBIN:-/usr/bin}/motion-tools.sh
 
 on_movie_end()
 {
-  motion.log.debug ${FUNCNAME[0]} ${*}
+  hzn::log.debug ${FUNCNAME[0]} ${*}
 
   local CN="${1}"
   local EN="${2}"
@@ -38,7 +38,7 @@ on_movie_end()
   local timestamp=$(date -u +%FT%TZ)
 
   local jsonfile
-  local dir="$(motion.config.target_dir)/${CN}"
+  local dir="$(motion::config.target_dir)/${CN}"
   local name="??????????????-${EN}.json"
   local jsons=($(find "$dir" -name "${name}" -print))
 
@@ -47,7 +47,7 @@ on_movie_end()
 
     jsonfile="${jsons[$((njson-1))]}"
   else
-    motion.log.warn "${FUNCNAME[0]} No JSON found; directory: ${dir}"
+    hzn::log.warn "${FUNCNAME[0]} No JSON found; directory: ${dir}"
   fi
 
   if [ "${jsonfile:-null}" != 'null' ] && [ -s "${jsonfile:-}" ]; then
@@ -55,22 +55,22 @@ on_movie_end()
 
     case ${FT} in
       8)
-       motion.log.debug "${FUNCNAME[0]} MP4 movie; type: ${FT}"
+       hzn::log.debug "${FUNCNAME[0]} MP4 movie; type: ${FT}"
        update='{"movie":'"${update}"'}'
        ;;
       16)
-       motion.log.debug "${FUNCNAME[0]} MP4 mask; type: ${FT}"
+       hzn::log.debug "${FUNCNAME[0]} MP4 mask; type: ${FT}"
        update='{"mask":'"${update}"'}'
        ;;
       *)
-       motion.log.warn "${FUNCNAME[0]} unknown movie; type: ${FT}"
+       hzn::log.warn "${FUNCNAME[0]} unknown movie; type: ${FT}"
        update='{"video_'${FT}'":'"${update}"'}'
        ;;
     esac
     # update with video
     jq '.+='"${update}" ${jsonfile} > ${jsonfile}.$$ && mv -f ${jsonfile}.$$ ${jsonfile} && result="${jsonfile}"
   else
-    motion.log.error "${FUNCNAME[0]} not found or invalid JSON file: ${jsonfile}"
+    hzn::log.error "${FUNCNAME[0]} not found or invalid JSON file: ${jsonfile}"
   fi
 }
 

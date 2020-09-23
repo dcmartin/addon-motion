@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/with-contenv bashio
 
 source ${USRBIN:-/usr/bin}/motion-tools.sh
 
@@ -21,7 +21,7 @@ source ${USRBIN:-/usr/bin}/motion-tools.sh
 
 on_picture_save()
 {
-  motion.log.debug "${FUNCNAME[0]} ${*}"
+  hzn::log.debug "${FUNCNAME[0]} ${*}"
 
   local CN="${1}"
   local EN="${2}"
@@ -37,19 +37,19 @@ on_picture_save()
   local TS=$(echo "${ID}" | sed 's/\(.*\)-.*-.*/\1/') 
   local SN=$(echo "${ID}" | sed 's/.*-..-\(.*\).*/\1/')
   local timezone=$(cat /etc/timezone)
-  #local NOW=$(motion.util.dateconv -i '%Y%m%d%H%M%S' -f "%s" "${TS}")
+  #local NOW=$(motion::util.dateconv -i '%Y%m%d%H%M%S' -f "%s" "${TS}")
   local NOW=$(date -u +%s)
   local timestamp=$(date -u +%FT%TZ)
 
   # create JSON
-  echo '{"device":"'$(motion.config.device)'","camera":"'"${CN}"'","type":"jpeg","timestamp":"'${timestamp}'","date":'"${NOW}"',"seqno":"'"${SN}"'","event":"'"${EN}"'","id":"'"${ID}"'","center":{"x":'"${MX}"',"y":'"${MY}"'},"width":'"${MW}"',"height":'"${MH}"',"size":'${SZ}',"noise":'${NL}'}' > "${IF%.*}.json"
+  echo '{"device":"'$(motion::config.device)'","camera":"'"${CN}"'","type":"jpeg","timestamp":"'${timestamp}'","date":'"${NOW}"',"seqno":"'"${SN}"'","event":"'"${EN}"'","id":"'"${ID}"'","center":{"x":'"${MX}"',"y":'"${MY}"'},"width":'"${MW}"',"height":'"${MH}"',"size":'${SZ}',"noise":'${NL}'}' > "${IF%.*}.json"
 
   # only post when/if
-  if [ $(motion.config.post_pictures) = "on" ]; then
+  if [ $(motion::config.post_pictures) = "on" ]; then
     # post JSON
-    motion.mqtt.pub -q 2 -t "$(motion.config.group)/$(motion.config.device)/$CN/event/image" -f "${IF%.*}.json"
+    motion::mqtt.pub -q 2 -t "$(motion::config.group)/$(motion::config.device)/$CN/event/image" -f "${IF%.*}.json"
     # post JPEG
-    motion.mqtt.pub -q 2 -t "$(motion.config.group)/$(motion.config.device)/$CN/image" -f "${IF}"
+    motion::mqtt.pub -q 2 -t "$(motion::config.group)/$(motion::config.device)/$CN/image" -f "${IF}"
   fi
 }
 

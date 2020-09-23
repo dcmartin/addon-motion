@@ -2,7 +2,7 @@
 
 setenv DEBUG
 
-if ($?VERBOSE) echo "$0:t $$ -- START $*" `date` >>& /tmp/motion.log
+if ($?VERBOSE) echo "$0:t $$ -- START $*" `date` &> /dev/stderr
 
 if ($#argv == 2) then
   set file = "$argv[1]"
@@ -16,15 +16,15 @@ if ($#argv == 2) then
 	on_new_jpg.sh "$file" "$output"
 	breaksw
       default:
-	if ($?DEBUG) echo "$0:t $$ -- $file:e unimplemented" >>& /tmp/motion.log
+	if ($?DEBUG) echo "$0:t $$ -- $file:e unimplemented" &> /dev/stderr
 	breaksw
     endsw
   else
-    echo "$0:t $$ -- no such file: $file" >>& /tmp/motion.log
+    echo "$0:t $$ -- no such file: $file" &> /dev/stderr
   endif
 else
-  echo "$0:t $$ -- invalid arguments $*" >>& /tmp/motion.log
+  echo "$0:t $$ -- invalid arguments $*" &> /dev/stderr
 endif
 
 done:
-  if ($?VERBOSE) echo "$0:t $$ -- FINISH" `date` >>& /tmp/motion.log
+  if ($?VERBOSE) echo "$0:t $$ -- FINISH" `date` &> /dev/stderr
