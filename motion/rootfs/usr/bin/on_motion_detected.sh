@@ -1,6 +1,6 @@
-#!/usr/bin/with-contenv bashio
+#!/bin/bash
 
-source /usr/bin/motion-tools.sh
+source ${USRBIN:-/usr/bin}/motion-tools.sh
 
 #
 # on_motion_detected.sh %$ %v %Y %m %d %H %M %S
@@ -19,4 +19,4 @@ source /usr/bin/motion-tools.sh
 ### main
 ###
 
-hzn::log.trace "${0} ${*}"
+motion.log.trace "${0} ${*}"

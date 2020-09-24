@@ -1,6 +1,6 @@
-#!/usr/bin/with-contenv bashio
+#!/bin/bash
 
-source /usr/bin/motion-tools.sh
+source ${USRBIN:-/usr/bin}/motion-tools.sh
 
 ###
 ### ftp_notifywait.sh
@@ -8,9 +8,9 @@ source /usr/bin/motion-tools.sh
 
 ftp_notifywait()
 {
-  hzn::log.debug "${FUNCNAME[0]} ${*}"
+  motion.log.debug "${FUNCNAME[0]} ${*}"
 
-  local cameras=$(motion::config.cameras)
+  local cameras=$(motion.config.cameras)
 
   for name in $(echo "${cameras}" | jq -r '.[]|.name'); do
     local type=$(echo "${cameras}" | jq -r '.[]|select(.name=="'"${name}"'").type')
@@ -20,23 +20,23 @@ ftp_notifywait()
       local input="${dir}.jpg"
 
       # prepare destination
-      hzn::log.debug "cleaning directory: ${input%.*}"
+      motion.log.debug "cleaning directory: ${input%.*}"
       rm -fr "${input%.*}"
 
       # create destination
-      hzn::log.debug "making directory: ${input%.*}"
+      motion.log.debug "making directory: ${input%.*}"
       mkdir -p "${input%.*}"
 
       # make initial target
-      hzn::log.debug "copying sample to ${input}"
+      motion.log.debug "copying sample to ${input}"
       cp -f /etc/motion/sample.jpg "${input}"
 
       # setup notifywait
-      hzn::log.debug "initiating do_ftp_notifywait.sh ${input%.*} ${input}"
+      motion.log.debug "initiating do_ftp_notifywait.sh ${input%.*} ${input}"
       do_ftp_notifywait.sh "${input%.*}" "${input}" &
 
       # manually "find" camera
-      hzn::log.debug "running on_camera_found.sh ${name} $($dateconv -f '%Y %m %d %H %M %S' -i '%s' $(date -u +%s))"
+      motion.log.debug "running on_camera_found.sh ${name} $($dateconv -f '%Y %m %d %H %M %S' -i '%s' $(date -u +%s))"
       on_camera_found.sh ${name} $($dateconv -f '%Y %m %d %H %M %S' -i "%s" $(date -u '+%s'))
     fi
   done

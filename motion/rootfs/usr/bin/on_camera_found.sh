@@ -1,7 +1,6 @@
-#!/usr/bin/with-contenv bashio
+#!/bin/bash
 
-source /usr/bin/motion-tools.sh
-
+source ${USRBIN:-/usr/bin}/motion-tools.sh
 #
 # %$ - camera name
 # %Y - The year as a decimal number including the century. 
@@ -15,7 +14,7 @@ source /usr/bin/motion-tools.sh
 on_camera_found()
 {
 
-  hzn::log.debug "${FUNCNAME[0]} ${*}"
+  motion.log.debug "${FUNCNAME[0]} ${*}"
 
   local CN="${1}"
   local YR="${2}"
@@ -25,16 +24,16 @@ on_camera_found()
   local MN="${6}"
   local SC="${7}"
   local TS="${YR}${MO}${DY}${HR}${MN}${SC}"
-  #local NOW=$(motion::util.dateconv -i '%Y%m%d%H%M%S' -f "%s" "${TS}")
+  #local NOW=$(motion.util.dateconv -i '%Y%m%d%H%M%S' -f "%s" "${TS}")
   local NOW=$(date -u +%s)
   local timestamp=$(date -u +%FT%TZ)
-  local topic="$(motion::config.group)/$(motion::config.device)/${CN}/status/found"
-  local message='{"group":"'$(motion::config.group)'","device":"'$(motion::config.device)'","camera":"'"${CN}"'","date":'"${NOW}"',"timestamp":"'${timestamp:-none}'","status":"found"}'
+  local topic="$(motion.config.group)/$(motion.config.device)/${CN}/status/found"
+  local message='{"group":"'$(motion.config.group)'","device":"'$(motion.config.device)'","camera":"'"${CN}"'","date":'"${NOW}"',"timestamp":"'${timestamp:-none}'","status":"found"}'
 
-  hzn::log.notice "Camera found: ${CN}; $(echo "${message:-null}" | jq -c '.')"
+  motion.log.notice "Camera found: ${CN}; $(echo "${message:-null}" | jq -c '.')"
 
   # `status/found`
-  motion::mqtt.pub -q 2 -t "${topic}" -m "${message}"
+  motion.mqtt.pub -q 2 -t "${topic}" -m "${message}"
 }
 
 camera_mqtt_found_reset()
@@ -43,11 +42,11 @@ camera_mqtt_found_reset()
 
   # clean any retained messages
   if [ "${CN:-null}" != 'null' ]; then
-    motion::mqtt.pub -q 2 -r -t "$(motion::config.group)/$(motion::config.device)/${CN}/event" -n
-    motion::mqtt.pub -q 2 -r -t "$(motion::config.group)/$(motion::config.device)/${CN}/event/start" -n
-    motion::mqtt.pub -q 2 -r -t "$(motion::config.group)/$(motion::config.device)/${CN}/event/end" -n
-    motion::mqtt.pub -q 2 -r -t "$(motion::config.group)/$(motion::config.device)/${CN}/image" -n
-    motion::mqtt.pub -q 2 -r -t "$(motion::config.group)/$(motion::config.device)/${CN}/image/end" -n
+    motion.mqtt.pub -q 2 -r -t "$(motion.config.group)/$(motion.config.device)/${CN}/event" -n
+    motion.mqtt.pub -q 2 -r -t "$(motion.config.group)/$(motion.config.device)/${CN}/event/start" -n
+    motion.mqtt.pub -q 2 -r -t "$(motion.config.group)/$(motion.config.device)/${CN}/event/end" -n
+    motion.mqtt.pub -q 2 -r -t "$(motion.config.group)/$(motion.config.device)/${CN}/image" -n
+    motion.mqtt.pub -q 2 -r -t "$(motion.config.group)/$(motion.config.device)/${CN}/image/end" -n
   fi
 }
 

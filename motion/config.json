@@ -1,5 +1,5 @@
 {
-  "name": "Motion-Ã👁",
+  "name": "Motion Ã👁",
   "version": "0.10.5",
   "slug": "motion",
   "description": "Video and audio surveillance with AI detection and classification",
@@ -10,13 +10,13 @@
   "arch": [
     "aarch64",
     "amd64",
-    "armv7"
+    "armv7",
+    "armhf"
   ],
   "ingress": true,
   "ingress_port": 7999,
-  "devices": [
-    "/dev/video0:/dev/video0:rwm"
-  ],
+  "audio": false,
+  "video": true,
   "hassio_api": true,
   "hassio_role": "default",
   "host_network": true,
@@ -31,7 +31,7 @@
     "config:rw"
   ],
   "panel_icon": "mdi:motion-sensor",
-  "panel_title": "Motion-Ã👁",
+  "panel_title": "Motion Ã👁",
   "panel_admin": true,
   "ports": {
     "7999/tcp": 7999,
@@ -119,8 +119,6 @@
     "password": "str?",
     "timezone": "str?",
     "default": {
-      "post_pictures": "list(first|last|best|most|center)",
-      "picture_output": "list(off|on|first|best)?",
       "brightness": "int?",
       "changes": "list(on|off)?",
       "contrast": "int?",
@@ -139,8 +137,10 @@
       "netcam_userpass": "str?",
       "palette": "int?",
       "password": "str?",
+      "picture_output": "list(off|on|first|best)?",
       "picture_quality": "int?",
       "post_capture": "int?",
+      "post_pictures": "list(first|last|best|most|center)",
       "pre_capture": "int?",
       "saturation": "int?",
       "stream_quality": "int?",
@@ -153,8 +153,6 @@
     },
     "cameras": [
       {
-        "name": "str",
-        "type": "list(local|netcam|ftpd|mqtt)?",
         "brightness": "int?",
         "changes": "list(on|off)?",
         "contrast": "int?",
@@ -168,10 +166,11 @@
         "icon": "str?",
         "lightswitch": "int?",
         "mac": "str?",
-        "mjpeg_url": "str?",
+        "mjpeg_url": "url?",
         "movie_max": "int(1,60)?",
         "movie_output": "list(off|mp4|mpeg4|3gp)?",
         "movie_quality": "int(1,100)?",
+        "name": "str",
         "netcam_url": "str?",
         "netcam_userpass": "str?",
         "palette": "int?",
@@ -185,8 +184,10 @@
         "text_scale": "int(1,10)?",
         "threshold": "int?",
         "threshold_percent": "int(0,100)?",
+        "type": "list(local|netcam|ftpd|mqtt)",
         "username": "str?",
         "userpass": "str?",
+        "w3w": [ "str?", "str?", "str?" ],
         "width": "int?"
       }
     ],

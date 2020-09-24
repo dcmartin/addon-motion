@@ -1,6 +1,6 @@
-#!/usr/bin/with-contenv bashio
+#!/bin/bash
 
-source /usr/bin/motion-tools.sh
+source ${USRBIN:-/usr/bin}/motion-tools.sh
 
 #
 # on_event_start.sh %$ %v %Y %m %d %H %M %S
@@ -17,7 +17,7 @@ source /usr/bin/motion-tools.sh
 
 on_event_start()
 {
-  hzn::log.debug ${FUNCNAME[0]} ${*}
+  motion.log.debug ${FUNCNAME[0]} ${*}
 
   local CN="${1}"
   local EN="${2}"
@@ -28,12 +28,12 @@ on_event_start()
   local MN="${7}"
   local SC="${8}"
   local TS="${YR}${MO}${DY}${HR}${MN}${SC}"
-  #local NOW=$(motion::util.dateconv -i '%Y%m%d%H%M%S' -f "%s" "$ts")
+  #local NOW=$(motion.util.dateconv -i '%Y%m%d%H%M%S' -f "%s" "$ts")
   local NOW=$(date -u +%s)
-  local dir=$(motion::config.target_dir)
+  local dir=$(motion.config.target_dir)
   local timestamp=$(date -u +%FT%TZ)
   local EJ="${dir}/${CN}/${TS}-${EN}.json"
-  local event='{"group":"'$(motion::config.group)'","device":"'$(motion::config.device)'","camera":"'${CN}'","event":"'${EN}'","start":'${NOW}',"timestamp":{"start":"'${timestamp}'"}}'
+  local event='{"group":"'$(motion.config.group)'","device":"'$(motion.config.device)'","camera":"'${CN}'","event":"'${EN}'","start":'${NOW}',"timestamp":{"start":"'${timestamp}'"}}'
 
   if [ -s "${EJ}" ]; then
     jq '.+='"${event}" ${EJ} > ${EJ}.$$ && mv -f ${EJ}.$$ ${EJ} 
@@ -43,9 +43,9 @@ on_event_start()
 
   if [ -s "${EJ:-}" ]; then
     # send MQTT
-    motion::mqtt.pub -q 2 -t "$(motion::config.group)/$(motion::config.device)/${CN}/event/start" -f "$EJ"
+    motion.mqtt.pub -q 2 -t "$(motion.config.group)/$(motion.config.device)/${CN}/event/start" -f "$EJ"
   else
-    hzn::log.error "${FUNCNAME[0]} Failure processing START event: ${*}"
+    motion.log.error "${FUNCNAME[0]} Failure processing START event: ${*}"
   fi
 }
 

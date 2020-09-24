@@ -1,6 +1,6 @@
-#!/usr/bin/with-contenv bashio
+#!/bin/bash
 
-source /usr/bin/motion-tools.sh
+source ${USRBIN:-/usr/bin}/motion-tools.sh
 
 # %$ - camera name
 # %Y - The year as a decimal number including the century. 
@@ -14,7 +14,7 @@ source /usr/bin/motion-tools.sh
 on_camera_lost()
 {
 
-  hzn::log.debug "${FUNCNAME[0]} ${*}"
+  motion.log.debug "${FUNCNAME[0]} ${*}"
 
   local CN="${1}"
   local YR="${2}"
@@ -25,16 +25,16 @@ on_camera_lost()
   local SC="${7}"
   local TS="${YR}${MO}${DY}${HR}${MN}${SC}"
   local timezone=$(cat /etc/timezone)
-  #local NOW=$(motion::util.dateconv --from-zone ${timezone:-UTC} -i '%Y%m%d%H%M%S' -f "%s" "${TS}")
+  #local NOW=$(motion.util.dateconv --from-zone ${timezone:-UTC} -i '%Y%m%d%H%M%S' -f "%s" "${TS}")
   local NOW=$(date -u +%s)
   local timestamp=$(date -u +%FT%TZ)
-  local topic="$(motion::config.group)/$(motion::config.device)/${CN}/status/lost"
-  local message='{"device":"'$(motion::config.device)'","camera":"'"${CN}"'","date":'"${NOW}"',"timestamp":"'${timestamp:-none}'","status":"lost"}'
+  local topic="$(motion.config.group)/$(motion.config.device)/${CN}/status/lost"
+  local message='{"device":"'$(motion.config.device)'","camera":"'"${CN}"'","date":'"${NOW}"',"timestamp":"'${timestamp:-none}'","status":"lost"}'
 
-  hzn::log.notice "Camera lost: ${CN}; $(echo "${message:-null}" | jq -c '.')"
+  motion.log.notice "Camera lost: ${CN}; $(echo "${message:-null}" | jq -c '.')"
 
   # `status/lost`
-  motion::mqtt.pub -q 2 -t "${topic}" -m "${message}"
+  motion.mqtt.pub -q 2 -t "${topic}" -m "${message}"
 }
 
 camera_mqtt_lost_reset()
@@ -44,11 +44,11 @@ camera_mqtt_lost_reset()
   # clean any retained messages
   if [ "${CN:-null}" != 'null' ]; then
     # no signal pattern to `image` 
-    motion::mqtt.pub -q 2 -r -t "$(motion::config.group)/$(motion::config.device)/${CN}/image" -f "/etc/motion/sample.jpg"
-    motion::mqtt.pub -q 2 -r -t "$(motion::config.group)/$(motion::config.device)/${CN}/image/end" -f "/etc/motion/sample.jpg"
+    motion.mqtt.pub -q 2 -r -t "$(motion.config.group)/$(motion.config.device)/${CN}/image" -f "/etc/motion/sample.jpg"
+    motion.mqtt.pub -q 2 -r -t "$(motion.config.group)/$(motion.config.device)/${CN}/image/end" -f "/etc/motion/sample.jpg"
     # no signal pattern to `image-animated`
-    motion::mqtt.pub -q 2 -r -t "$(motion::config.group)/$(motion::config.device)/$CN/image-animated" -f "/etc/motion/sample.gif"
-    motion::mqtt.pub -q 2 -r -t "$(motion::config.group)/$(motion::config.device)/$CN/image-animated-mask" -f "/etc/motion/sample.gif"
+    motion.mqtt.pub -q 2 -r -t "$(motion.config.group)/$(motion.config.device)/$CN/image-animated" -f "/etc/motion/sample.gif"
+    motion.mqtt.pub -q 2 -r -t "$(motion.config.group)/$(motion.config.device)/$CN/image-animated-mask" -f "/etc/motion/sample.gif"
   fi
 }
 

@@ -1,6 +1,6 @@
-#!/usr/bin/with-contenv bashio
+#!/bin/bash
 
-source /usr/bin/motion-tools.sh
+source ${USRBIN:-/usr/bin}/motion-tools.sh
 
 ###
 ### functions
@@ -8,7 +8,7 @@ source /usr/bin/motion-tools.sh
 
 motion_event_movie_convert()
 {
-  hzn::log.debug "${FUNCNAME[0]}" "${*}"
+  motion.log.debug "${FUNCNAME[0]}" "${*}"
 
   local input="${1}"
   local output="${2}"
@@ -18,18 +18,18 @@ motion_event_movie_convert()
   local ffmpeg=$(mktemp)
 
   if [ ${seconds} -gt 15 ]; then 
-    hzn::log.warn "${FUNCNAME[0]} EXCEEDED; elapsed ${seconds}; fps: ${fps}; width: ${width}"
+    motion.log.warn "${FUNCNAME[0]} EXCEEDED; elapsed ${seconds}; fps: ${fps}; width: ${width}"
     seconds=15
   else
-    hzn::log.debug "${FUNCNAME[0]} elapsed ${seconds}; fps: ${fps}; width: ${width}"
+    motion.log.debug "${FUNCNAME[0]} elapsed ${seconds}; fps: ${fps}; width: ${width}"
   fi
   if [ ${seconds} -gt 0 ]; then
     ffmpeg -t ${seconds} -i "${input}" -t ${seconds} -vf "fps=${fps},scale=${width}:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse" -loop 0 "${output}" &> ${ffmpeg}
   else
-    hzn::log.warn "${FUNCNAME[0]} ZERO seconds"
+    motion.log.warn "${FUNCNAME[0]} ZERO seconds"
   fi
   if [ ! -s "${output}" ]; then
-    hzn::log.error "${FUNCNAME[0]} ffmpeg failed: $(cat ${ffmpeg})"
+    motion.log.error "${FUNCNAME[0]} ffmpeg failed: $(cat ${ffmpeg})"
     output=
   fi
   rm -f "${ffmpeg:-}"
@@ -38,12 +38,12 @@ motion_event_movie_convert()
 
 motion_event_animated()
 {
-  hzn::log.debug "${FUNCNAME[0]}" "${*}"
+  motion.log.debug "${FUNCNAME[0]}" "${*}"
 
   local result
   local jsonfile="${1}"
   local camera=$(jq -r '.camera' ${jsonfile})
-  local width=$(jq -r '.cameras[]|select(.name=="'${camera}'").width' $(motion::config.file))
+  local width=$(jq -r '.cameras[]|select(.name=="'${camera}'").width' $(motion.config.file))
   local movie=$(jq '.movie' ${jsonfile})
 
   if [ "${movie:-null}" != 'null' ]; then
@@ -60,23 +60,23 @@ motion_event_animated()
         if [ "${output:-null}" != 'null' ]; then
           result="${output}"
         else
-          hzn::log.error "${FUNCNAME[0]} no GIF output"
+          motion.log.error "${FUNCNAME[0]} no GIF output"
         fi
       else
-        hzn::log.error "${FUNCNAME[0]} elapsed time invalid: ${elapsed}"
+        motion.log.error "${FUNCNAME[0]} elapsed time invalid: ${elapsed}"
       fi
     else
-      hzn::log.error "${FUNCNAME[0]} no MP4 input: ${input}"
+      motion.log.error "${FUNCNAME[0]} no MP4 input: ${input}"
     fi
   else
-    hzn::log.warn "${FUNCNAME[0]} no movie specified; metadata: $(jq -c '.image=(.image!=null)' ${jsonfile})"
+    motion.log.warn "${FUNCNAME[0]} no movie specified; metadata: $(jq -c '.image=(.image!=null)' ${jsonfile})"
   fi
   echo "${result:-null}"
 }
 
 motion_event_images_differ()
 {
-  hzn::log.debug "${FUNCNAME[0]}; args: ${*}"
+  motion.log.debug "${FUNCNAME[0]}; args: ${*}"
 
   local tmpdir=$(mktemp -d)
   local jpegs=(${*})
@@ -112,14 +112,14 @@ motion_event_images_differ()
     done
     avgdiff=$((totaldiff/njpeg))
   else
-    hzn::log.warn "${FUNCNAME[0]} Insufficient images to compare"
+    motion.log.warn "${FUNCNAME[0]} Insufficient images to compare"
   fi
   echo "${diffs[@]}"
 }
 
 motion_event_images_average()
 {
-  hzn::log.debug "${FUNCNAME[0]}; args: ${*}"
+  motion.log.debug "${FUNCNAME[0]}; args: ${*}"
 
   local jsonfile="${1}"
   local camera=$(jq -r '.camera' ${jsonfile})
@@ -129,12 +129,12 @@ motion_event_images_average()
   local result
 
   for jpg in ${jpgs}; do
-    local jpegfile=$(motion::config.target_dir)/${camera}/${jpg}.jpg
+    local jpegfile=$(motion.config.target_dir)/${camera}/${jpg}.jpg
 
     if [ -s ${jpegfile} ]; then
       jpegs=(${jpegs[@]} ${jpegfile})
     else
-      hzn::log.warn "${FUNCNAME[0]} Cannot find JPEG file: ${jpegfile}"
+      motion.log.warn "${FUNCNAME[0]} Cannot find JPEG file: ${jpegfile}"
     fi 
   done
 
@@ -144,27 +144,27 @@ motion_event_images_average()
     if [ -s "${average}" ]; then
       result="${average}"
     else
-      hzn::log.error "${FUNCNAME[0]} Failed to calculate average; jpegs: ${jpegs[@]}"
+      motion.log.error "${FUNCNAME[0]} Failed to calculate average; jpegs: ${jpegs[@]}"
     fi
   elif [ ${#jpegs[@]} -eq 1 ]; then
     ln -s ${jpegs[0]} ${average}
     result="${average}"
   else
-    hzn::log.error "${FUNCNAME[0]} no images found"
+    motion.log.error "${FUNCNAME[0]} no images found"
   fi
   echo "${result:-}"
 }
 
 motion_event_json()
 {
-  hzn::log.debug "${FUNCNAME[0]}; args: ${*}"
+  motion.log.debug "${FUNCNAME[0]}; args: ${*}"
 
   local result
   local cn="${1}"
   local ts="${2}"
   local en="${3}"
   local jsonfile
-  local dir="$(motion::config.target_dir)/${cn}"
+  local dir="$(motion.config.target_dir)/${cn}"
   local name="??????????????-${en}.json"
   local jsons=($(find "$dir" -name "${name}" -print))
 
@@ -173,20 +173,20 @@ motion_event_json()
 
     jsonfile="${jsons[$((njson-1))]}"
   else
-    hzn::log.warn "${FUNCNAME[0]} no JSON found; directory: ${dir}"
+    motion.log.warn "${FUNCNAME[0]} no JSON found; directory: ${dir}"
   fi
 
   if [ "${jsonfile:-null}" != 'null' ] && [ -s "${jsonfile:-}" ]; then
     local timezone=$(cat /etc/timezone)
-    local end=$(motion::util.dateconv --from-zone ${timezone} -i '%Y%m%d%H%M%S' -f "%s" "$ts")
+    local end=$(motion.util.dateconv --from-zone ${timezone} -i '%Y%m%d%H%M%S' -f "%s" "$ts")
     local start=$(jq -r '.start' ${jsonfile})
     local elapsed=$((end-start))
     local timestamp=$(date -u +%FT%TZ)
 
     jq '.id="'${ts}-${en}'"|.end='${end}'|.elapsed='${elapsed}'|.timestamp.end="'${timestamp}'"' ${jsonfile} > ${jsonfile}.$$ && mv -f ${jsonfile}.$$ ${jsonfile} && result="${jsonfile}"
-    hzn::log.debug "${FUNCNAME[0]}; metdata: $(jq -c '.' ${jsonfile})"
+    motion.log.debug "${FUNCNAME[0]}; metdata: $(jq -c '.' ${jsonfile})"
   else
-    hzn::log.error "${FUNCNAME[0]} no JSON file: ${jsonfile}"
+    motion.log.error "${FUNCNAME[0]} no JSON file: ${jsonfile}"
   fi
   echo "${result:-}"
 }
@@ -211,7 +211,7 @@ motion_event_json()
 
 motion_event_images()
 {
-  hzn::log.debug "${FUNCNAME[0]}; args: ${*}"
+  motion.log.debug "${FUNCNAME[0]}; args: ${*}"
 
   local result
   local jsonfile="${1}"
@@ -219,7 +219,7 @@ motion_event_images()
   local camera=$(jq -r '.camera' ${jsonfile})
   local start=$(jq -r '.start' ${jsonfile})
   local end=$(jq -r '.end' ${jsonfile})
-  local dir="$(motion::config.target_dir)/${camera}"
+  local dir="$(motion.config.target_dir)/${camera}"
   local jpgs=($(find "${dir}" -name "[0-9][0-9]*-${event}-[0-9][0-9]*.jpg" -print | sort))
   local njpg=${#jpgs[@]}
 
@@ -241,7 +241,7 @@ motion_event_images()
         # concatenate
         if [ -z "${images:-}" ]; then images="${image}"; else images="${image},${images}"; fi
       else
-        hzn::log.warn "${FUNCNAME[0]} Missing metadata for image: ${jpeg}"
+        motion.log.warn "${FUNCNAME[0]} Missing metadata for image: ${jpeg}"
       fi
       i=$((i-1))
     done
@@ -252,23 +252,23 @@ motion_event_images()
       jq -c '.start='${start}'|.end='${end}'|.elapsed='$((end - start))'|.images=['"${images}"']' ${jsonfile} > ${jsonfile}.$$ && mv -f ${jsonfile}.$$ ${jsonfile}
       result=$(jq '.images|length' ${jsonfile})
     else
-      hzn::log.error "${FUNCNAME[0]} Failed to process images; event: ${event}; camera: ${camera}; found: ${njpgs}"
+      motion.log.error "${FUNCNAME[0]} Failed to process images; event: ${event}; camera: ${camera}; found: ${njpgs}"
     fi
   else
-    hzn::log.error "${FUNCNAME[0]} Unable to find(1) any images; event: ${event}; camera: ${camera}; directory: ${dir}"
+    motion.log.error "${FUNCNAME[0]} Unable to find(1) any images; event: ${event}; camera: ${camera}; directory: ${dir}"
   fi
 
-  hzn::log.debug "${FUNCNAME[0]}; result: ${result:-null}"
+  motion.log.debug "${FUNCNAME[0]}; result: ${result:-null}"
   echo "${result:-0}"
 }
 
 motion_event_picture()
 {
-  hzn::log.debug "${FUNCNAME[0]}; args: ${*}"
+  motion.log.debug "${FUNCNAME[0]}; args: ${*}"
 
   local result
   local jsonfile="${1}"
-  local pp=$(motion::config.post_pictures)
+  local pp=$(motion.config.post_pictures)
   local nimage=$(jq '.images|length' ${jsonfile})
 
   case "${pp:-null}" in
@@ -288,21 +288,21 @@ motion_event_picture()
       result=$(jq -r '.images['$((nimage/2))'].id' ${jsonfile})
       ;;
     null)
-      hzn::log.error "${FUNCNAME[0]} Invalid post_picturess: ${pp}"
+      motion.log.error "${FUNCNAME[0]} Invalid post_picturess: ${pp}"
       ;;
   esac
 
   if [ "${result:-null}" != 'null' ]; then
     local camera=$(jq -r '.camera' ${jsonfile})
 
-    result=$(motion::config.target_dir)/${camera}/${result}.jpg
+    result=$(motion.config.target_dir)/${camera}/${result}.jpg
   fi
   echo "${result:-}"
 }
 
 motion_event_append_picture()
 {
-  hzn::log.debug "${FUNCNAME[0]}; args: ${*}"
+  motion.log.debug "${FUNCNAME[0]}; args: ${*}"
 
   local result
   local jsonfile="${1}"
@@ -323,10 +323,10 @@ motion_event_append_picture()
     if [ -s "${jsonfile}" ] && [ ! -e ${b64file} ]; then
       result='true'
     else
-      hzn::log.error "${FUNCNAME[0]} failed to create aggregated JSON with base64 encoded JPEG; metadata: $(jq -c '.' ${jsonfile})"
+      motion.log.error "${FUNCNAME[0]} failed to create aggregated JSON with base64 encoded JPEG; metadata: $(jq -c '.' ${jsonfile})"
     fi
   else
-    hzn::log.error "${FUNCNAME[0]} no JPEG file; post_picture: ${pp}; metadata: $(jq -c '.' ${jsonfile})"
+    motion.log.error "${FUNCNAME[0]} no JPEG file; post_picture: ${pp}; metadata: $(jq -c '.' ${jsonfile})"
   fi
 
   echo "${result:-null}"
@@ -334,7 +334,7 @@ motion_event_append_picture()
 
 motion_publish_event()
 {
-  hzn::log.debug "${FUNCNAME[0]}; args: ${*}"
+  motion.log.debug "${FUNCNAME[0]}; args: ${*}"
 
   local result
   local jsonfile="${1}"
@@ -346,10 +346,10 @@ motion_publish_event()
   jq -c '.date='$(date -u +%s)'|.timestamp.publish="'${timestamp}'"' ${jsonfile} > ${jsonfile}.$$ && mv -f ${jsonfile}.$$ ${jsonfile}
   if [ -s "${jsonfile}" ]; then
     # publish JSON to MQTT
-    motion::mqtt.pub -q 2 -t "$(motion::config.group)/${device}/${camera}/event/end" -f "${jsonfile}" && rm -f ${temp} || result=false
+    motion.mqtt.pub -q 2 -t "$(motion.config.group)/${device}/${camera}/event/end" -f "${jsonfile}" && rm -f ${temp} || result=false
     result='true'
   else
-    hzn::log.error "${FUNCNAME[0]} failed to flatten and timestamp; metadata: $(jq -c '.image=(.image!=null)' ${jsonfile})"
+    motion.log.error "${FUNCNAME[0]} failed to flatten and timestamp; metadata: $(jq -c '.image=(.image!=null)' ${jsonfile})"
   fi
 
   echo "${result:-false}"
@@ -357,7 +357,7 @@ motion_publish_event()
 
 motion_publish_average()
 {
-  hzn::log.debug "${FUNCNAME[0]}; args: ${*}"
+  motion.log.debug "${FUNCNAME[0]}; args: ${*}"
 
   local result
   local jsonfile="${1}"
@@ -366,34 +366,34 @@ motion_publish_average()
 
   if [ -s "${avgfile}" ]; then
     result="${avgfile}"
-    motion::mqtt.pub -q 2 -t "$(motion::config.group)/${device}/${camera}/image-average" -f "${avgfile}" || result=false
+    motion.mqtt.pub -q 2 -t "$(motion.config.group)/${device}/${camera}/image-average" -f "${avgfile}" || result=false
   else
-    hzn::log.error "${FUNCNAME[0]} failed to calculate average image; metadata: $(jq -c '.image=(.image!=null)' ${jsonfile})"
+    motion.log.error "${FUNCNAME[0]} failed to calculate average image; metadata: $(jq -c '.image=(.image!=null)' ${jsonfile})"
   fi
   echo "${result:-false}"
 }
 
 motion_publish_animated()
 {
-  hzn::log.debug "${FUNCNAME[0]}; args: ${*}"
+  motion.log.debug "${FUNCNAME[0]}; args: ${*}"
 
   local result
   local jsonfile="${1}"
   local giffile=$(motion_event_animated ${jsonfile})
 
   if [ -s "${giffile}" ]; then
-    motion::mqtt.pub -q 2 -t "$(motion::config.group)/${device}/${camera}/image-animated" -f "${giffile}" || result=false
+    motion.mqtt.pub -q 2 -t "$(motion.config.group)/${device}/${camera}/image-animated" -f "${giffile}" || result=false
     rm -f "${giffile}"
     result='true'
   else
-    hzn::log.error "${FUNCNAME[0]} failed to calculate animated GIF; metadata: $(jq -c '.image=(.image!=null)' ${jsonfile})"
+    motion.log.error "${FUNCNAME[0]} failed to calculate animated GIF; metadata: $(jq -c '.image=(.image!=null)' ${jsonfile})"
   fi
   echo "${result:-false}"
 }
 
 motion_publish_annotated()
 {
-  hzn::log.debug "${FUNCNAME[0]}; args: ${*}"
+  motion.log.debug "${FUNCNAME[0]}; args: ${*}"
 
   local result
   local jsonfile="${1}"
@@ -401,17 +401,17 @@ motion_publish_annotated()
   local annfile=$(motion_event_annotated ${jsonfile} ${jpgfile})
 
   if [ -s "${annfile}" ]; then
-    motion::mqtt.pub -q 2 -t "$(motion::config.group)/${device}/${camera}/event/end/" -f "${annfile}" || result=false
+    motion.mqtt.pub -q 2 -t "$(motion.config.group)/${device}/${camera}/event/end/" -f "${annfile}" || result=false
     result="${annfile}"
   else
-    hzn::log.error "${FUNCNAME[0]} failed annotated image; metadata: $(jq -c '.image=(.image!=null)' ${jsonfile})"
+    motion.log.error "${FUNCNAME[0]} failed annotated image; metadata: $(jq -c '.image=(.image!=null)' ${jsonfile})"
   fi
   echo "${result:-false}"
 }
 
 motion_publish_composite()
 {
-  hzn::log.debug "${FUNCNAME[0]}; args: ${*}"
+  motion.log.debug "${FUNCNAME[0]}; args: ${*}"
 
   local result
   echo "${result:-false}"
@@ -419,7 +419,7 @@ motion_publish_composite()
 
 motion_event_process()
 {
-  hzn::log.debug "${FUNCNAME[0]}; args: ${*}"
+  motion.log.debug "${FUNCNAME[0]}; args: ${*}"
 
   local result
   local jsonfile="${1}"
@@ -431,40 +431,40 @@ motion_event_process()
     local device=$(jq -r '.device' ${jsonfile})
 
     # publish JPEG to MQTT
-    motion::mqtt.pub -q 2 -t "$(motion::config.group)/${device}/${camera}/image/end" -f "${jpgfile}" || result=false
+    motion.mqtt.pub -q 2 -t "$(motion.config.group)/${device}/${camera}/image/end" -f "${jpgfile}" || result=false
   else
-    hzn::log.error "${FUNCNAME[0]} NO KEY FRAME: $(jq -c '.' ${jsonfile})"
+    motion.log.error "${FUNCNAME[0]} NO KEY FRAME: $(jq -c '.' ${jsonfile})"
     result='false'
   fi
 
   # add picture to event JSON
   if [ "${result:-}" != 'false' ] && [ $(motion_event_append_picture ${jsonfile} ${jpgfile}) = 'true' ]; then
-    hzn::log.debug "${FUNCNAME[0]} picture appended; from: motion_append_picture ${jsonfile}"
+    motion.log.debug "${FUNCNAME[0]} picture appended; from: motion_append_picture ${jsonfile}"
   else
-    hzn::log.error "${FUNCNAME[0]} failed append picture; metadata: $(jq -c '.' ${jsonfile})"
+    motion.log.error "${FUNCNAME[0]} failed append picture; metadata: $(jq -c '.' ${jsonfile})"
     result=false
   fi
 
   # add animated GIF to event JSON
   if [ "${result:-}" != 'false' ] && [ $(motion_publish_animated "${jsonfile}") = 'true' ]; then
-    hzn::log.debug "${FUNCNAME[0]} GIF returned; from: motion_publish_animated ${jsonfile}"
+    motion.log.debug "${FUNCNAME[0]} GIF returned; from: motion_publish_animated ${jsonfile}"
   else
-    hzn::log.error "${FUNCNAME[0]} no GIF returned; from: motion_publish_animated ${jsonfile}"
+    motion.log.error "${FUNCNAME[0]} no GIF returned; from: motion_publish_animated ${jsonfile}"
   fi
 
   # publish event JSON 
   if [ "${result:-}" != 'false' ] && [ $(motion_publish_event ${jsonfile}) = 'true' ]; then
-    hzn::log.debug "${FUNCNAME[0]} published to MQTT; metadata: $(jq -c '.image=(.image!=null)' ${jsonfile})"
+    motion.log.debug "${FUNCNAME[0]} published to MQTT; metadata: $(jq -c '.image=(.image!=null)' ${jsonfile})"
     result=true
   else
-    hzn::log.error "${FUNCNAME[0]} event failed to publish; metadata: $(jq -c '.' ${jsonfile})"
+    motion.log.error "${FUNCNAME[0]} event failed to publish; metadata: $(jq -c '.' ${jsonfile})"
   fi
   echo "${result:-false}"
 }
 
 motion_event_end()
 {
-  hzn::log.debug "${FUNCNAME[0]}; args: ${*}"
+  motion.log.debug "${FUNCNAME[0]}; args: ${*}"
 
   local result
   local cn="${1}"
@@ -486,25 +486,25 @@ motion_event_end()
       if [ ${njpeg:-0} -eq 1 ]; then
         # process single image event
         if [ $(motion_event_process ${jsonfile}) != 'false' ]; then
-          hzn::log.info "${FUNCNAME[0]} success: event: ${en}; camera: ${cn}; metadata: $(jq '.image=(.image!=null)' ${jsonfile})"
+          motion.log.info "${FUNCNAME[0]} success: event: ${en}; camera: ${cn}; metadata: $(jq '.image=(.image!=null)' ${jsonfile})"
           result='true'
         else
-          hzn::log.error "${FUNCNAME[0]} failed: event: ${en}; camera: ${cn}; metadata: $(jq -c '.image=(.image!=null)' ${jsonfile})"
+          motion.log.error "${FUNCNAME[0]} failed: event: ${en}; camera: ${cn}; metadata: $(jq -c '.image=(.image!=null)' ${jsonfile})"
           result='false'
         fi
       elif [ ${njpeg:-0} > 0 ]; then
-        hzn::log.debug "${FUNCNAME[0]} legacy processing: event: ${en}; camera: ${cn}; count: ${njpeg}"
+        motion.log.debug "${FUNCNAME[0]} legacy processing: event: ${en}; camera: ${cn}; count: ${njpeg}"
   
         # process multi-image event with legacy code
         export \
-          MOTION_GROUP=$(motion::config.group) \
-          MOTION_DEVICE=$(motion::config.device) \
-          MOTION_JSON_FILE=$(motion::config.file) \
-          MOTION_TARGET_DIR=$(motion::config.target_dir) \
-          MOTION_MQTT_HOST=$(echo $(motion::config.mqtt) | jq -r '.host') \
-          MOTION_MQTT_PORT=$(echo $(motion::config.mqtt) | jq -r '.port') \
-          MOTION_MQTT_USERNAME=$(echo $(motion::config.mqtt) | jq -r '.username') \
-          MOTION_MQTT_PASSWORD=$(echo $(motion::config.mqtt) | jq -r '.password') \
+          MOTION_GROUP=$(motion.config.group) \
+          MOTION_DEVICE=$(motion.config.device) \
+          MOTION_JSON_FILE=$(motion.config.file) \
+          MOTION_TARGET_DIR=$(motion.config.target_dir) \
+          MOTION_MQTT_HOST=$(echo $(motion.config.mqtt) | jq -r '.host') \
+          MOTION_MQTT_PORT=$(echo $(motion.config.mqtt) | jq -r '.port') \
+          MOTION_MQTT_USERNAME=$(echo $(motion.config.mqtt) | jq -r '.username') \
+          MOTION_MQTT_PASSWORD=$(echo $(motion.config.mqtt) | jq -r '.password') \
           MOTION_LOG_LEVEL=${MOTION_LOG_LEVEL} \
           MOTION_LOGTO=${MOTION_LOGTO} \
           MOTION_FRAME_SELECT='key' \
@@ -512,13 +512,13 @@ motion_event_end()
           /usr/bin/on_event_end.tcsh ${*}
         result='legacy'
       else
-        hzn::log.error "${FUNCNAME[0]} FAILURE: no images; event: ${en}; camera: ${cn}; metadata: $(jq -c '.' ${jsonfile})"
+        motion.log.error "${FUNCNAME[0]} FAILURE: no images; event: ${en}; camera: ${cn}; metadata: $(jq -c '.' ${jsonfile})"
       fi
     else
-      hzn::log.error "${FUNCNAME[0]} FAILURE: no metadata; event: ${en}; camera: ${cn}; metadata: $(jq -c '.' ${jsonfile})"
+      motion.log.error "${FUNCNAME[0]} FAILURE: no metadata; event: ${en}; camera: ${cn}; metadata: $(jq -c '.' ${jsonfile})"
     fi
   else
-    hzn::log.error "${FUNCNAME[0]} FAILURE: invalid arguments: ${*}"
+    motion.log.error "${FUNCNAME[0]} FAILURE: invalid arguments: ${*}"
   fi
   echo "${result:-null}"
 }
@@ -538,18 +538,18 @@ motion_event_end()
 
 on_event_end()
 {
-  hzn::log.debug "${FUNCNAME[0]}; args: ${*}"
+  motion.log.debug "${FUNCNAME[0]}; args: ${*}"
 
   # close i/o
   # exec 0>&- # close stdin
   # exec 1>&- # close stdout
-  # exec 2>&- # close stderr
+  # exec 2>&- =''# close stderr
 
-  hzn::log.info "${FUNCNAME[0]} begin; event: ${*}"
+  motion.log.info "${FUNCNAME[0]} begin; event: ${*}"
 
   local result=$(motion_event_end ${*} | jq -c '.')
 
-  hzn::log.info "${FUNCNAME[0]} finish; event: ${*}; result: ${result}"
+  motion.log.info "${FUNCNAME[0]} finish; event: ${*}; result: ${result}"
 }
 
 ###
